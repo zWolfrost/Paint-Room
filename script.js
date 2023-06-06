@@ -11,7 +11,7 @@ const CONTEXT = CANVAS.getContext("2d");
 const TOOLSTOP = document.querySelector(".tools.top")
 const TOOLSBOT = document.querySelector(".tools.bottom")
 
-const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][1])
+const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][0])
 
 
 let roomName
