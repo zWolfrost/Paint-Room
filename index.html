@@ -1,0 +1,88 @@
+<html>
+   <head>
+      <title>Paint Room</title>
+      <link rel="icon" type="image/x-icon" href="assets/paint.ico">
+
+      <link rel="stylesheet" href="style.css">
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.2/socket.io.min.js"></script>
+      <script defer src="script.js"></script>
+   </head>
+   <body>
+      <div id="header">
+         Paint Room
+      </div>
+
+      <div id="joinscreen">
+         <div id="joinfield">
+            <input type="text" id="roomname" placeholder="Enter a room name">
+            <button id="joinbtn">Join</button>
+         </div>
+         <div id="infofield">
+            Waiting for connection...
+         </div>
+      </div>
+
+      <div id="paintscreen">
+         <canvas id="sheet"></canvas>
+         <input type="text" id="textinput" placeholder="Insert text">
+
+         <div class="tools top">
+            <div>
+               <button id="pencil">✏️</button>
+               <button id="eraser">🧽</button>
+               <button id="bucket">💧</button>
+               <button id="clear">🧹</button>
+               <button id="cut">✂️</button>
+               <select id="save">
+                  <option value="0" hidden selected>💾</option>
+
+                  <option disabled>Save</option>
+                  <option value="save1">Slot 1</option>
+                  <option value="save2">Slot 2</option>
+                  <option value="save3">Slot 3</option>
+
+                  <option disabled></option>
+                  <option disabled>Load</option>
+                  <option value="load1" id="load1">Slot 1</option>
+                  <option value="load2" id="load2">Slot 2</option>
+                  <option value="load3" id="load3">Slot 3</option>
+
+                  <option disabled></option>
+                  <option disabled>Other</option>
+                  <option value="clear">Clear Slots</option>
+                  <option value="download">Download</option>
+                  <option value="upload">Upload</option>
+               </select>
+            </div>
+
+            <div>
+               <button id="line">➖</button>
+               <button id="square">⬛</button>
+               <button id="circle">⚫</button>
+               <button id="text">💬</button>
+
+               &emsp;
+
+               <button id="undo">↩</button>
+               <button id="redo">↪</button>
+            </div>
+         </div>
+
+         <div class="tools bottom">
+            <button id="red" class="colors">🔴</button
+            ><button id="orange" class="colors">🟠</button
+            ><button id="yellow" class="colors">🟡</button
+            ><button id="green" class="colors">🟢</button
+            ><button id="blue" class="colors">🔵</button
+            ><button id="purple" class="colors">🟣</button
+            ><button id="black" class="colors">⚫</button
+            ><button id="white" class="colors">⚪</button>
+
+            <input type="range" id="sizebar" class="range" min="1" max="25" value="3"/>
+            <div id="sizecount"></div>
+         </div>
+      </body>
+      </div>
+   </body>
+</html>
