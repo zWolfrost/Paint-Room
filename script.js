@@ -57,10 +57,10 @@ function startPainting()
 
 
 
-CANVAS.addEventListener("touchstart", touchHandler, true);
-CANVAS.addEventListener("touchmove", touchHandler, true);
-CANVAS.addEventListener("touchend", touchHandler, true);
-CANVAS.addEventListener("touchcancel", touchHandler, true);
+//CANVAS.addEventListener("touchstart", touchHandler, true);
+//CANVAS.addEventListener("touchmove", touchHandler, true);
+//CANVAS.addEventListener("touchend", touchHandler, true);
+//CANVAS.addEventListener("touchcancel", touchHandler, true);
 function touchHandler(event)
 {
    let touches = event.changedTouches, first = touches[0], type = "";
