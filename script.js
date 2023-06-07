@@ -57,14 +57,42 @@ function startPainting()
 
 
 
-CANVAS.addEventListener("touchmove", function (e) {
-  let touch = e.touches[0];
-  let mouseEvent = new MouseEvent("mousemove", {
-    clientX: touch.clientX,
-    clientY: touch.clientY
-  });
-  CANVAS.dispatchEvent(mouseEvent);
-}, false);
+CANVAS.addEventListener("touchstart", touchHandler, true);
+CANVAS.addEventListener("touchmove", touchHandler, true);
+CANVAS.addEventListener("touchend", touchHandler, true);
+CANVAS.addEventListener("touchcancel", touchHandler, true);
+
+function touchHandler(event)
+{
+   let touches = event.changedTouches, first = touches[0], type = "";
+
+   switch(event.type)
+   {
+      case "touchstart": type = "mousedown"; break;
+      case "touchmove":  type = "mousemove"; break;
+      case "touchend":   type = "mouseup";   break;
+      default: return;
+   }
+   
+   let simulatedEvent = new MouseEvent(type,
+   {
+      bubbles: true,
+      cancelable: true,
+      screenX: first.screenX,
+      screenY: first.screenY,
+      clientX: first.clientX,
+      clientY: first.clientY,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      button: 0,
+      relatedTarget: null
+   });
+
+   first.target.dispatchEvent(simulatedEvent);
+   event.preventDefault();
+};
 
 
 
