@@ -57,17 +57,6 @@ function startPainting()
 
 
 
-CANVAS.addEventListener("touchmove", function (e) {
-  let touch = e.touches[0];
-  let mouseEvent = new MouseEvent("mousemove", {
-    clientX: touch.clientX,
-    clientY: touch.clientY
-  });
-  CANVAS.dispatchEvent(mouseEvent);
-}, false);
-
-
-
 let opt = {obj: null, event: null, fun: null, color: "black", size: 3};
 
 HTMLElement.prototype.animate = function(name, seconds=1, mode="ease-in-out", repetitions=1, reset=true, callback=null)
