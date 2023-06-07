@@ -21,7 +21,6 @@ socket.on("connect", () =>
 {
    INFOFIELD.innerText = `Connection with server established`;
    JOINFIELD.style.display = "inline";
-   ROOMNAME.value = socket.id;
 })
 socket.on("connect_error", err => INFOFIELD.innerText = `Error: ${err.message}`);
 
