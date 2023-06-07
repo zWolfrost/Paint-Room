@@ -48,8 +48,8 @@ function startPainting()
    TOOLSTOP.style.display = "inline";
    TOOLSBOT.style.display = "inline";
 
-   CANVAS.width = window.screen.width;
-   CANVAS.height = window.screen.height;
+   CANVAS.width = window.innerWidth;
+   CANVAS.height = window.innerHeight;
 
    CONTEXT.lineCap = "round";
    CONTEXT.lineJoin = "round";
