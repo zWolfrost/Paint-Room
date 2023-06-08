@@ -47,7 +47,7 @@ function startPainting()
    PAINTSCR.style.display = "inline";
    TOOLSTOP.style.display = "inline";
    TOOLSBOT.style.display = "inline";
-
+   
    CANVAS.width = window.screen.width;
    CANVAS.height = window.screen.height;
 
@@ -80,17 +80,15 @@ function touchHandler(event)
       case "touchend":   type = "mouseup";   break;
       default: return;
    }
-
+   
    let simulatedEvent = new MouseEvent(type,
    {
       bubbles: true,
       cancelable: true,
-
       screenX: first.screenX,
       screenY: first.screenY,
       clientX: first.clientX,
       clientY: first.clientY,
-
       ctrlKey: false,
       shiftKey: false,
       altKey: false,
