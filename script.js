@@ -28,8 +28,6 @@ socket.on("connect_error", err => INFOFIELD.innerText = `Error: ${err.message}`)
 
 JOINBTN.addEventListener("click", () =>
 {
-   socket.emit("leaveroom", roomName)
-
    roomName = ROOMNAME.value;
 
    if (roomName !== "") socket.emit("joinroom", roomName)
