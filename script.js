@@ -47,7 +47,7 @@ function startPainting()
    PAINTSCR.style.display = "inline";
    TOOLSTOP.style.display = "inline";
    TOOLSBOT.style.display = "inline";
-   
+
    CANVAS.width = window.screen.width;
    CANVAS.height = window.screen.height;
 
@@ -80,7 +80,7 @@ function touchHandler(event)
       case "touchend":   type = "mouseup";   break;
       default: return;
    }
-   
+
    let simulatedEvent = new MouseEvent(type,
    {
       bubbles: true,
@@ -152,23 +152,24 @@ document.getElementById("pencil").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => drawMode(CONTEXT, opt.width, opt.color);
+   opt.fun = (e) => drawMode(e, opt.width, opt.color);
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function drawMode(ctx, width, color)
+function drawMode(e, width, color)
 {
-   let mouse = {x: window.event.x, y: window.event.y};
+   let ctx = e.target.getContext("2d");
+   let mouse = {x: mousePosX(e), y: mousePosY(e)};
 
-   let pencilSession = function()
+   function pencilSession(e)
    {
-      mouse = {oldx: mouse.x, oldy: mouse.y, x: window.event.x, y: window.event.y};
+      mouse = {oldx: mouse.x, oldy: mouse.y, x: mousePosX(e), y: mousePosY(e)};
 
       drawLine(ctx, [mouse.oldx, mouse.oldy], [mouse.x, mouse.y], width, color)
       socket.emit("drawline", roomName, [mouse.oldx, mouse.oldy], [mouse.x, mouse.y], width, color)
    }
 
-   pencilSession();
+   pencilSession(e);
 
    window.addEventListener("mousemove", pencilSession);
 
@@ -191,18 +192,19 @@ document.getElementById("eraser").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => eraseMode(CONTEXT, "white");
+   opt.fun = (e) => eraseMode(e, "white");
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function eraseMode(ctx, color)
+function eraseMode(e, color)
 {
-   let mouse = {x: window.event.x, y: window.event.y};
+   let ctx = e.target.getContext("2d");
+   let mouse = {x: mousePosX(e), y: mousePosY(e)};
    let sizeAverage = 2;
 
-   let pencilSession = function()
+   function pencilSession(e)
    {
-      mouse = {oldx: mouse.x, oldy: mouse.y, x: window.event.x, y: window.event.y};
+      mouse = {oldx: mouse.x, oldy: mouse.y, x: mousePosX(e), y: mousePosY(e)};
 
       let curSize = Math.abs(mouse.x - mouse.oldx + mouse.y - mouse.oldy);
       if (curSize < 1) curSize = 1;
@@ -214,7 +216,7 @@ function eraseMode(ctx, color)
       socket.emit("drawline", roomName, [mouse.oldx, mouse.oldy], [mouse.x, mouse.y], sizeAverage*5, color)
    }
 
-   pencilSession();
+   pencilSession(e);
 
    window.addEventListener("mousemove", pencilSession);
 
@@ -237,11 +239,11 @@ document.getElementById("bucket").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => fillMode(CANVAS, opt.color, 0);
+   opt.fun = (e) => fillMode(e, opt.color, 0);
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function fillMode(canvas, color, tollerance)
+function fillMode(e, color, tollerance)
 {
    const COLORSRGB =
    {
@@ -257,11 +259,11 @@ function fillMode(canvas, color, tollerance)
       "white":  [255, 255, 255],
    };
 
-   let ctx = canvas.getContext("2d");
+   let ctx = e.target.getContext("2d");
    let rgb = color[0] == "#" ? hexToRGB(color) : COLORSRGB[color];
 
-   socket.emit("floodfill", roomName, window.event.x, window.event.y, rgb, tollerance)
-   floodFill(ctx, window.event.x, window.event.y, rgb, tollerance, roomName)
+   socket.emit("floodfill", roomName, mousePosX(e), mousePosY(e), rgb, tollerance)
+   floodFill(ctx, mousePosX(e), mousePosY(e), rgb, tollerance, roomName)
 
    socket.emit("savetohistory", roomName)
    saveToHistory(ctx);
@@ -288,20 +290,26 @@ document.getElementById("cut").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => {if (cutData.canCut) cutMode(CANVAS)};
+   opt.fun = (e) => {if (cutData.canCut) cutMode(e)};
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function cutMode(canvas)
+function cutMode(e)
 {
-   let ctx = canvas.getContext("2d");
-   let mouse = {begX: window.event.x, begY: window.event.y};
+   let ctx = e.target.getContext("2d");
+   let mouse = {begX: mousePosX(e), begY: mousePosY(e)};
    let tempPixelData = ctx.getPixelData();
 
-   let cutSession = function()
+   function cutSession(e)
    {
-      mouse.x = window.event.x;
-      mouse.y = window.event.y;
+      mouse.x = mousePosX(e);
+      mouse.y = mousePosY(e);
+
+      if (mouse.x < 0) mouse.x = 0;
+      else if (mouse.x > ctx.canvas.width) mouse.x = ctx.canvas.width;
+
+      if (mouse.y < 0) mouse.y = 0;
+      else if (mouse.y > ctx.canvas.height) mouse.y = ctx.canvas.height;
 
       ctx.putPixelData(tempPixelData);
 
@@ -311,7 +319,7 @@ function cutMode(canvas)
    window.addEventListener("mousemove", cutSession);
 
 
-   let moveCutSession = function()
+   function moveCutSession()
    {
       cutData.canCut = false;
       cutData.ctrlv = false;
@@ -320,22 +328,23 @@ function cutMode(canvas)
 
       ctx.putPixelData(tempPixelData);
 
-      if (mouse.x == mouse.begX) mouse.x++;
-      if (mouse.y == mouse.begY) mouse.y++;
-
       if (mouse.begX > mouse.x) [mouse.begX, mouse.x] = [++mouse.x, --mouse.begX];
       if (mouse.begY > mouse.y) [mouse.begY, mouse.y] = [++mouse.y, --mouse.begY];
+
+      if (mouse.x == mouse.begX) mouse.x++;
+      if (mouse.y == mouse.begY) mouse.y++;
 
       let cut = {pixels: ctx.getPixelData(mouse.begX, mouse.begY, mouse.x, mouse.y),
          begX: mouse.begX, begY: mouse.begY, endX: mouse.x, endY: mouse.y}
 
       drawRect(ctx, [cut.begX-1, cut.begY-1], [cut.endX, cut.endY], 1, "black", 5)
 
-      let waitDrag = function()
+
+      let waitDrag = function(e)
       {
          window.removeEventListener("keydown", keyDown);
 
-         if (window.event.x > cut.begX && window.event.x < cut.endX && window.event.y > cut.begY && window.event.y < cut.endY)
+         if (mousePosX(e) > cut.begX && mousePosX(e) < cut.endX && mousePosY(e) > cut.begY && mousePosY(e) < cut.endY)
          {
             ctx.putPixelData(tempPixelData);
             ctx.putPixelData([...cut.pixels].fill(255), cut.begX, cut.begY, cut.endX, cut.endY);
@@ -344,13 +353,13 @@ function cutMode(canvas)
             ctx.putPixelData(cut.pixels, cut.begX, cut.begY, cut.endX, cut.endY);
             drawRect(ctx, [cut.begX-1, cut.begY-1], [cut.endX, cut.endY], 1, "black", 5);
 
-            mouse.begX = window.event.x;
-            mouse.begY = window.event.y;
+            mouse.begX = mousePosX(e);
+            mouse.begY = mousePosY(e);
 
-            let cutMove = function()
+            let cutMove = function(e)
             {
-               mouse.x = window.event.x;
-               mouse.y = window.event.y;
+               mouse.x = mousePosX(e);
+               mouse.y = mousePosY(e);
 
                cut.newBegX = cut.begX + mouse.x - mouse.begX;
                cut.newBegY = cut.begY + mouse.y - mouse.begY;
@@ -369,7 +378,9 @@ function cutMode(canvas)
             {
                window.removeEventListener("mousemove", cutMove);
 
-               socket.emit("movepixel", roomName, cut.begX, cut.begY, cut.endX, cut.endY, cut.newBegX, cut.newBegY)
+               if (cutData.ctrlv) socket.emit("movepixel", roomName, cutData.begX, cutData.begY, cutData.endX, cutData.endY, cut.newBegX, cut.newBegY, false)
+               else socket.emit("movepixel", roomName, cut.begX, cut.begY, cut.endX, cut.endY, cut.newBegX, cut.newBegY)
+
                ctx.putPixelData(tempPixelData);
                ctx.putPixelData(cut.pixels, cut.begX, cut.begY, cut.endX, cut.endY, cut.newBegX, cut.newBegY);
 
@@ -386,16 +397,19 @@ function cutMode(canvas)
 
             if (cutData.ctrlv == true)
             {
+               socket.emit("movepixel", roomName, cutData.begX, cutData.begY, cutData.endX, cutData.endY, cut.newBegX, cut.newBegY, false)
                ctx.putPixelData(cut.pixels, cut.begX, cut.begY, cut.endX, cut.endY);
 
                socket.emit("savetohistory", roomName)
                saveToHistory(ctx);
             }
 
-            if (window.event.x >= 0 && window.event.x <= canvas.width && window.event.y >= 0 && window.event.y <= canvas.height) cutMode(canvas);
+            if (mousePosX(e) >= 0 && mousePosX(e) <= e.target.width && mousePosY(e) >= 0 && mousePosY(e) <= e.target.height) cutMode(e);
             else cutData.canCut = true;
          }
       }
+      window.addEventListener("mousedown", waitDrag, {once: true});
+
 
       let keyDown = function(e)
       {
@@ -405,29 +419,39 @@ function cutMode(canvas)
             {
                case "c":
                {
+                  window.removeEventListener("mousedown", waitDrag);
+
                   ctx.putPixelData(tempPixelData);
 
-                  cutData.pixels = cut.pixels;
-                  cutData.width = cut.endX - cut.begX;
-                  cutData.height = cut.endY - cut.begY;
+                  Object.assign(cutData, cut)
 
                   break;
                }
 
                case "v":
                {
-                  ctx.putPixelData(tempPixelData);
-                  ctx.putPixelData(cutData.pixels, 0, 0, cutData.width, cutData.height);
+                  if (cutData.pixels != undefined)
+                  {
+                     window.addEventListener("mousedown", waitDrag, {once: true});
 
-                  cut.pixels = ctx.getPixelData(0, 0, cutData.width, cutData.height);
-                  cut.begX = 0;
-                  cut.begY = 0;
-                  cut.endX = cutData.width;
-                  cut.endY = cutData.height;
+                     let begX = ctx.canvas.width/2 - (cutData.endX - cutData.begX)/2;
+                     let begY = ctx.canvas.height/2 - (cutData.endY - cutData.begY)/2;
+                     let endX = begX + (cutData.endX - cutData.begX);
+                     let endY = begY + (cutData.endY - cutData.begY);
 
-                  drawRect(ctx, [0, 0], [cutData.width, cutData.height], 1, "black", 5);
+                     ctx.putPixelData(tempPixelData);
+                     ctx.putPixelData(cutData.pixels, begX, begY, endX, endY);
 
-                  cutData.ctrlv = true;
+                     drawRect(ctx, [begX-1, begY-1], [endX, endY], 1, "black", 5);
+
+                     cut.pixels = ctx.getPixelData(begX, begY, endX, endY);
+                     cut.begX = begX;
+                     cut.begY = begY;
+                     cut.endX = endX;
+                     cut.endY = endY;
+
+                     cutData.ctrlv = true;
+                  }
 
                   break;
                }
@@ -443,10 +467,11 @@ function cutMode(canvas)
                   window.removeEventListener("keydown", keyDown);
                   window.removeEventListener("mousedown", waitDrag);
 
+                  cutData.canCut = true;
+
+                  socket.emit("movepixel", roomName, cut.begX, cut.begY, cut.endX, cut.endY, cut.newBegX, cut.newBegY, true, false)
                   ctx.putPixelData(tempPixelData);
                   ctx.putPixelData([...cut.pixels].fill(255), cut.begX, cut.begY, cut.endX, cut.endY);
-
-                  cutData.canCut = true;
 
                   socket.emit("savetohistory", roomName)
                   saveToHistory(ctx);
@@ -456,9 +481,6 @@ function cutMode(canvas)
             }
          }
       }
-
-      window.addEventListener("mousedown", waitDrag, {once: true});
-
       window.addEventListener("keydown", keyDown);
    }
 
@@ -475,28 +497,28 @@ document.getElementById("line").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => lineMode(CANVAS, opt.width, opt.color);
+   opt.fun = (e) => lineMode(e, opt.width, opt.color);
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function lineMode(canvas, width, color)
+function lineMode(e, width, color)
 {
-   let ctx = canvas.getContext("2d");
-   let mouse = {begx: window.event.x, begy: window.event.y};
+   let ctx = e.target.getContext("2d");
+   let mouse = {begx: mousePosX(e), begy: mousePosY(e)};
 
    let tempData = ctx.getPixelData();
 
-   let lineSession = function()
+   function lineSession(e)
    {
-      mouse.x = window.event.x;
-      mouse.y = window.event.y;
+      mouse.x = mousePosX(e);
+      mouse.y = mousePosY(e);
 
       ctx.putPixelData(tempData);
 
       drawLine(ctx, [mouse.begx, mouse.begy], [mouse.x, mouse.y], width, color);
    }
 
-   lineSession();
+   lineSession(e);
 
    window.addEventListener("mousemove", lineSession);
 
@@ -520,28 +542,28 @@ document.getElementById("square").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => rectMode(CANVAS, opt.width, opt.color);
+   opt.fun = (e) => rectMode(e, opt.width, opt.color);
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function rectMode(canvas, width, color)
+function rectMode(e, width, color)
 {
-   let ctx = canvas.getContext("2d");
-   let mouse = {begx: window.event.x, begy: window.event.y};
+   let ctx = e.target.getContext("2d");
+   let mouse = {begx: mousePosX(e), begy: mousePosY(e)};
 
    let tempData = ctx.getPixelData();
 
-   let rectSession = function()
+   function rectSession(e)
    {
-      mouse.x = window.event.x;
-      mouse.y = window.event.y;
+      mouse.x = mousePosX(e);
+      mouse.y = mousePosY(e);
 
       ctx.putPixelData(tempData);
 
       drawRect(ctx, [mouse.begx, mouse.begy], [mouse.x, mouse.y], width, color);
    }
 
-   rectSession();
+   rectSession(e);
 
    window.addEventListener("mousemove", rectSession);
 
@@ -565,22 +587,22 @@ document.getElementById("circle").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => ellipseMode(CANVAS, opt.width, opt.color);
+   opt.fun = (e) => ellipseMode(e, opt.width, opt.color);
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function ellipseMode(canvas, width, color)
+function ellipseMode(e, width, color)
 {
-   let ctx = canvas.getContext("2d");
-   let mouse = {begx: window.event.x, begy: window.event.y};
+   let ctx = e.target.getContext("2d");
+   let mouse = {begx: mousePosX(e), begy: mousePosY(e)};
    let center, radius;
 
    let tempData = ctx.getPixelData();
 
-   let ellipseSession = function()
+   function ellipseSession(e)
    {
-      mouse.x = window.event.x;
-      mouse.y = window.event.y;
+      mouse.x = mousePosX(e);
+      mouse.y = mousePosY(e);
 
       ctx.putPixelData(tempData);
 
@@ -589,7 +611,7 @@ function ellipseMode(canvas, width, color)
       drawEllipse(ctx, center, radius, width, color)
    }
 
-   ellipseSession();
+   ellipseSession(e);
 
    window.addEventListener("mousemove", ellipseSession);
 
@@ -613,13 +635,13 @@ document.getElementById("text").addEventListener("click", function()
 
    CANVAS.removeEventListener("mousedown", opt.fun);
 
-   opt.fun = () => textMode(CANVAS, opt.width, opt.color);
+   opt.fun = (e) => textMode(e, opt.width, opt.color);
 
    CANVAS.addEventListener("mousedown", opt.fun);
 });
-function textMode(canvas, size, color)
+function textMode(e, size, color)
 {
-   let ctx = canvas.getContext("2d");
+   let ctx = e.target.getContext("2d");
 
    const INPUT = document.createElement("input")
    PAINTSCR.append(INPUT)
@@ -629,8 +651,8 @@ function textMode(canvas, size, color)
    const fontSize = (Math.log(size) / Math.log(1.05)) + 16;
    const font = "monospace";
 
-   const begX = window.event.x
-   const begY = window.event.y;
+   const begX = mousePosX(e)
+   const begY = mousePosY(e);
 
 
    INPUT.style.display = "inline";
@@ -639,9 +661,9 @@ function textMode(canvas, size, color)
    INPUT.style.margin = `${begY-(INPUT.offsetHeight/2)}px 0px 0px ${begX}px`
 
 
-   let txtInput = function()
+   function txtInput(e)
    {
-      if (window.event.code === "Enter")
+      if (e.code === "Enter")
       {
          INPUT.style.display = "none";
          //INPUT.removeEventListener("keydown", txtInput);
@@ -679,7 +701,6 @@ function textMode(canvas, size, color)
       window.addEventListener("mousedown", () => INPUT.remove(), {once: true});
    }, {once: true})
 };
-
 
 document.getElementById("save").addEventListener("click", function()
 {
@@ -737,12 +758,37 @@ document.getElementById("sizebar").addEventListener("input", function()
    SIZECOUNT.style.fontSize = (+this.value * 0.8) + 10 + "px";
    SIZECOUNT.style.left = -62 + +this.value*16.2 + "px";
 
-   this.addEventListener("change", () =>
+   this.addEventListener("mouseup", () =>
    {
       SIZECOUNT.style.display = "none";
       TOOLSBOT.style.height = "max-content";
    }, {once: true});
 });
+
+
+window.addEventListener("keydown", function(e)
+{
+   if (e.ctrlKey || e.metaKey)
+   {
+      switch (e.key)
+      {
+         case "z":
+         {
+            document.getElementById("undo").click()
+
+            break;
+         }
+
+         case "y":
+         {
+            document.getElementById("redo").click()
+
+            break;
+         }
+      }
+   }
+});
+
 
 
 socket.on("drawline_broadcast", (...args) => drawLine(CONTEXT, ...args))
@@ -890,11 +936,13 @@ function clear(ctx)
    ctx.putPixelData(ctx.getPixelData().fill(255));
 }
 socket.on("movepixel_broadcast", (...args) => movePixelData(CONTEXT, ...args))
-function movePixelData(ctx, begX, begY, endX, endY, putX, putY)
+function movePixelData(ctx, begX, begY, endX, endY, putX, putY, delsource=true, keepend=true)
 {
+   console.log(begX, begY, endX, endY, putX, putY, delsource, keepend)
+
    let pixelData = ctx.getPixelData(begX, begY, endX, endY)
-   ctx.putPixelData([...pixelData].fill(255), begX, begY, endX, endY);
-   ctx.putPixelData(pixelData, begX, begY, endX, endY, putX, putY);
+   if (delsource) ctx.putPixelData([...pixelData].fill(255), begX, begY, endX, endY);
+   if (keepend) ctx.putPixelData(pixelData, begX, begY, endX, endY, putX, putY);
 }
 
 
@@ -924,3 +972,15 @@ function redoHistory(ctx, safe=true)
       ctx.putPixelData(succSave.pixels, 0, 0, succSave.width, succSave.height);
    }
 }
+
+
+function mousePosX(e, obj=CANVAS)
+{
+   return e.pageX - obj.offsetLeft - obj.clientLeft
+}
+function mousePosY(e, obj=CANVAS)
+{
+   return e.pageY - obj.offsetTop - obj.clientTop
+}
+
+startPainting()
