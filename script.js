@@ -30,14 +30,12 @@ JOINBTN.addEventListener("click", () =>
 {
    roomName = ROOMNAME.value;
 
-   if (roomName !== "") socket.emit("joinroom", roomName)
-
-   startPainting()
+   if (roomName !== "") socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
 })
 
 
 
-function startPainting()
+function startPainting(width=window.screen.width, height=window.screen.height)
 {
    HEADER.style.display = "none";
    JOINSCR.style.display = "none";
@@ -46,8 +44,8 @@ function startPainting()
    TOOLSTOP.style.display = "inline";
    TOOLSBOT.style.display = "inline";
 
-   CANVAS.width = window.screen.width;
-   CANVAS.height = window.screen.height;
+   CANVAS.width = width;
+   CANVAS.height = height;
 
    CONTEXT.lineCap = "round";
    CONTEXT.lineJoin = "round";
