@@ -17,13 +17,19 @@ io.on("connection", socket =>
       }
    })
 
-   socket.on("joinroom", roomName =>
+   socket.on("joinroom", (roomName, size, startPainting) =>
    {
       socket.join(roomName)
 
-      if (roomName in events == false) events[roomName] = []
+      if (roomName in events == false)
+      {
+         events[roomName] = [size]
+         startPainting(...size)
+      }
+      else startPainting(...events[roomName][0])
 
-      for (e of events[roomName]) socket.emit(e[0], ...e.slice(1))
+
+      for (e of events[roomName].slice(1)) socket.emit(e[0], ...e.slice(1))
    })
 
    function broadcastEvent(onEvent, emitEvent=onEvent+"_broadcast")
