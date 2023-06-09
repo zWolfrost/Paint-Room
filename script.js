@@ -1,3 +1,5 @@
+const PLAYERCOLORS = ["red", "orange", "yellow", "green", "blue", "purple"]
+
 const HEADER = document.getElementById("header")
 const JOINSCR = document.getElementById("joinscreen")
 const JOINFIELD = document.getElementById("joinfield")
@@ -15,6 +17,7 @@ const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3
 
 
 let roomName;
+let playerColor;
 
 
 socket.on("connect", () =>
@@ -35,7 +38,7 @@ JOINBTN.addEventListener("click", () =>
 
 
 
-function startPainting(width=window.screen.width, height=window.screen.height)
+function startPainting(playerID=0, width=window.screen.width, height=window.screen.height)
 {
    HEADER.style.display = "none";
    JOINSCR.style.display = "none";
@@ -57,6 +60,9 @@ function startPainting(width=window.screen.width, height=window.screen.height)
 
    socket.emit("savetohistory", roomName)
    saveToHistory(CONTEXT);
+
+   playerColor = PLAYERCOLORS[playerID % PLAYERCOLORS.length]
+   document.documentElement.style.setProperty("--player-color", playerColor);
 }
 
 
@@ -979,4 +985,23 @@ function mousePosY(e, obj=CANVAS)
    return e.pageY - obj.offsetTop - obj.clientTop
 }
 
-//startPainting()
+
+CANVAS.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerColor))
+socket.on("mousemove_broadcast", (mouseX, mouseY, playerColor) =>
+{
+   const width = 16;
+
+   let pointer = document.querySelector(`.${playerColor}`)
+
+   if (pointer == undefined)
+   {
+      pointer = document.createElement("img")
+      pointer.src = "pointer.png"
+      pointer.width = width
+      pointer.classList.add("pointer", playerColor)
+      PAINTSCR.append(pointer)
+   }
+
+   pointer.style.left = mouseX - width/2 + CANVAS.offsetLeft - CANVAS.clientLeft + "px"
+   pointer.style.top = mouseY - width/2 + CANVAS.offsetTop - CANVAS.clientTop + "px"
+})
