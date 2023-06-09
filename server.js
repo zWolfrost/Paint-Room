@@ -10,7 +10,7 @@ io.on("connection", socket =>
    {
       for (roomName of Object.keys(events))
       {
-         if (io.sockets.adapter.rooms[roomName] === undefined)
+         if (io.sockets.adapter.rooms.get(roomName) === undefined)
          {
             delete events[roomName]
          }
@@ -19,24 +19,26 @@ io.on("connection", socket =>
 
    socket.on("joinroom", (roomName, size, startPainting) =>
    {
+      let playerID = io.sockets.adapter.rooms.get(roomName)?.size ?? 0
+
       socket.join(roomName)
 
       if (roomName in events == false)
       {
          events[roomName] = [size]
-         startPainting(...size)
+         startPainting(playerID, ...size)
       }
-      else startPainting(...events[roomName][0])
+      else startPainting(playerID, ...events[roomName][0])
 
 
       for (e of events[roomName].slice(1)) socket.emit(e[0], ...e.slice(1))
    })
 
-   function broadcastEvent(onEvent, emitEvent=onEvent+"_broadcast")
+   function broadcastEvent(onEvent, emitEvent=onEvent+"_broadcast", saveEvent=true)
    {
       socket.on(onEvent, function(roomName, ...args)
       {
-         events[roomName].push([emitEvent, ...args])
+         if (saveEvent) events[roomName].push([emitEvent, ...args])
 
          socket.broadcast.to(roomName).emit(emitEvent, ...args)
       })
@@ -54,4 +56,6 @@ io.on("connection", socket =>
    broadcastEvent("savetohistory")
    broadcastEvent("undo")
    broadcastEvent("redo")
+
+   broadcastEvent("mousemove", "mousemove_broadcast", false)
 })
