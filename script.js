@@ -983,4 +983,4 @@ function mousePosY(e, obj=CANVAS)
    return e.pageY - obj.offsetTop - obj.clientTop
 }
 
-startPainting()
+//startPainting()
