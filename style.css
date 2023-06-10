@@ -1,25 +1,41 @@
 :root
 {
+   --tollerance-gradient: 0%;
    --player-color: white;
 }
 
 
 body
 {
-   background: linear-gradient(135deg, #ff4848, #ffb732, #dcdc00, #00a300, #3434ff, #a82dff, #ff78ff);
-   background-size: 2000% 2000%;
+   background: linear-gradient(
+      135deg,
+      hsl(0, 100%, 60%),
+      hsl(30, 100%, 60%),
+      hsl(60, 100%, 60%),
+      hsl(90, 100%, 60%),
+      hsl(120, 100%, 60%),
+      hsl(150, 100%, 60%),
+      hsl(180, 100%, 60%),
+      hsl(210, 100%, 60%),
+      hsl(240, 100%, 60%),
+      hsl(270, 100%, 60%),
+      hsl(300, 100%, 60%),
+      hsl(330, 100%, 60%),
+      hsl(360, 100%, 60%)
+   );
+   background-size: 1000% 1000%;
 
-   font-family: Verdana;
+   font-family: Arial;
 
    padding-top: 30px;
    overflow: hidden;
    margin: 0px;
    padding: 0px;
 
-   animation: rainbow 20s linear alternate infinite;
+   animation: movebg 20s linear alternate infinite;
 }
 
-@keyframes rainbow
+@keyframes movebg
 {
    from {background-position: 0% 0%;}
    to {background-position: 100% 100%;}
@@ -77,7 +93,7 @@ body
 #infofield
 {
    color: white;
-   text-shadow: 1px 1px 1px #000;
+   text-shadow: 1px 1px 1px black;
    margin: 10px;
 }
 
@@ -89,6 +105,7 @@ body
    position: absolute;
    width: 100%;
    height: 100%;
+   user-select: none;
 }
 
 #sheet
@@ -104,32 +121,79 @@ body
 }
 
 
-.tools
-{
-   display: none;
-   position: absolute;
-   margin: auto;
-   user-select: none;
-   padding: 0px 5px 3px 5px;
-   left: 0;
-   right: 0;
-   text-align: center;
 
-   background: linear-gradient(350deg, var(--player-color), white);
-   border: 2px solid #262421;
-   border-radius: 5px;
-   width: max-content;
-   box-shadow: 2px 2px 0px #262421;
-}
-.tools.top
+#top
 {
+   position: absolute;
    top: 15px;
 }
-.tools.bottom
+#bottom
 {
+   position: absolute;
    bottom: 15px;
 }
-.tools button
+.flex
+{
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   gap: 20px;
+
+   width: 100%;
+}
+
+#tollerance
+{
+   display: none;
+   flex: 1;
+
+   padding: 8px;
+   max-width: 750px;
+
+   background:
+      linear-gradient(
+         90deg,
+         transparent calc(var(--tollerance-gradient)*0.961 + 17px - 2px),
+         white     calc(var(--tollerance-gradient)*0.961 + 17px - 2px),
+         white     calc(var(--tollerance-gradient)*0.961 + 17px + 2px),
+         transparent calc(var(--tollerance-gradient)*0.961 + 17px + 2px)
+      ),
+      linear-gradient(
+         90deg,
+         white 17px,
+         var(--player-color) calc(100% - 17px)
+      );
+
+   color: white;
+   font-weight: bold;
+   text-shadow: 1px 1px 2px black;
+}
+#right
+{
+   display: none;
+   visibility: hidden;
+   flex: 1;
+
+   padding: 8px;
+   max-width: 750px;
+}
+#colors
+{
+   height: 44px;
+}
+
+
+.options
+{
+   padding: 0px 5px 3px 5px;
+   text-align: center;
+
+   background: linear-gradient(170deg, rgba(255, 255, 255, 0.2),  var(--player-color));
+   border: 2px solid #262421;
+   border-radius: 5px;
+   box-shadow: 2px 2px 0px #262421;
+}
+.options button
 {
    border: none;
    background-color: transparent;
@@ -140,22 +204,22 @@ body
    cursor: pointer;
 
    font-size: 25px;
-   outline: none;
 }
 
-.tools select
+.options select
 {
    text-align: center;
    border: none;
    border-radius: 5px;
-   outline: none !important;
+   outline: none;
+   background: none;
 
    font-size: 25px;
 
    width: 52px;
    cursor: pointer;
 }
-.tools select option
+.options select option
 {
    font-size: 20px;
 }
@@ -166,9 +230,9 @@ body
    font-size: 30px;
 }
 
-.tools .selectedtop, .tools .selectedbottom
+.options .selectedtop, .options .selectedbottom
 {
-   outline: 2px dashed darkgray;
+   outline: 2px dashed deepskyblue;
 }
 
 
@@ -180,8 +244,6 @@ body
    display: none;
 
    position: absolute;
-   top: 0px;
-   left: 0px;
 
    min-width: 250px;
    width: 250px;
@@ -196,10 +258,48 @@ body
 {
    width: 400px;
 }
+#tollerancebar
+{
+   width: 100%;
+}
 
-#sizecount
+#sizecount, #tollerancecount
+{
+   display: none;
+   position: absolute;
+   font-weight: bold;
+   color: white;
+   text-shadow: 1px 1px 1px black;
+   text-align: center;
+   width: 100px;
+}
+#tollerancecount
+{
+   font-size: 30px;
+}
+
+
+
+#colorpicker
 {
    position: relative;
+   top: 5px;
+
+   appearance: none;
+   background-color: transparent;
+   width: 36px;
+   height: 38px;
+   border: none;
+   cursor: pointer;
+}
+#colorpicker::-webkit-color-swatch
+{
+   border-radius: 50%;
+   border: 2px solid black;
+}
+#colorpicker.transparent::-webkit-color-swatch
+{
+   background-color: initial !important
 }
 
 

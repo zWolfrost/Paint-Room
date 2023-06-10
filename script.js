@@ -1,4 +1,4 @@
-const PLAYERCOLORS = ["red", "orange", "yellow", "green", "blue", "purple"]
+const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][1])
 
 const HEADER = document.getElementById("header")
 const JOINSCR = document.getElementById("joinscreen")
@@ -10,10 +10,8 @@ const JOINBTN = document.getElementById("joinbtn")
 const PAINTSCR = document.getElementById("paintscreen")
 const CANVAS = document.getElementById("sheet");
 const CONTEXT = CANVAS.getContext("2d");
-const TOOLSTOP = document.querySelector(".tools.top")
-const TOOLSBOT = document.querySelector(".tools.bottom")
 
-const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][0])
+const PLAYERCOLORS = ["red", "orange", "yellow", "green", "blue", "purple"]
 
 
 let roomName;
@@ -31,9 +29,9 @@ socket.on("connect_error", err => INFOFIELD.innerText = `Error: ${err.message}`)
 
 JOINBTN.addEventListener("click", () =>
 {
-   roomName = ROOMNAME.value;
+   roomName = ROOMNAME.value || socket.id;
 
-   if (roomName !== "") socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
+   socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
 })
 
 
@@ -44,8 +42,7 @@ function startPainting(playerID=0, width=window.screen.width, height=window.scre
    JOINSCR.style.display = "none";
 
    PAINTSCR.style.display = "inline";
-   TOOLSTOP.style.display = "inline";
-   TOOLSBOT.style.display = "inline";
+   //document.querySelectorAll(".options").forEach(e => e.style.display = "block")
 
    CANVAS.width = width;
    CANVAS.height = height;
@@ -141,7 +138,7 @@ CanvasRenderingContext2D.prototype.putPixelData = function(pixelData, begX=0, be
 
 let history = [0];
 let cutData = {canCut: true, pixels: null, width: 0, height: 0, ctrlv: false};
-let opt = {fun: null, color: "black", width: 3};
+let onModeChange;
 
 
 document.getElementById("pencil").addEventListener("click", function()
@@ -152,11 +149,11 @@ document.getElementById("pencil").addEventListener("click", function()
 
    CANVAS.style.cursor = "url(assets/pencil.cur), auto";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => drawMode(e, getSize(), getColor());
 
-   opt.fun = (e) => drawMode(e, opt.width, opt.color);
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function drawMode(e, width, color)
 {
@@ -192,11 +189,11 @@ document.getElementById("eraser").addEventListener("click", function()
 
    CANVAS.style.cursor = "url(assets/eraser.cur), auto";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => eraseMode(e, "white");
 
-   opt.fun = (e) => eraseMode(e, "white");
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function eraseMode(e, color)
 {
@@ -239,33 +236,33 @@ document.getElementById("bucket").addEventListener("click", function()
 
    CANVAS.style.cursor = "url(assets/bucket.cur), auto";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => fillMode(e, getColor(), getTollerance());
 
-   opt.fun = (e) => fillMode(e, opt.color, 0);
+   CANVAS.addEventListener("mousedown", mode);
 
-   CANVAS.addEventListener("mousedown", opt.fun);
+   document.getElementById("tollerance").style.display = "inline"
+   document.getElementById("right").style.display = "inline"
+
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode);
+      document.getElementById("tollerance").style.display = "none"
+      document.getElementById("right").style.display = "none"
+   }
 });
 function fillMode(e, color, tollerance)
 {
-   const COLORSRGB =
+   function hexToRGB(hex)
    {
-      "red":    [255, 0,   0  ],
-      "orange": [255, 165, 0  ],
-      "yellow": [255, 255, 0  ],
-      "green":  [0,   128, 0  ],
-      "blue":   [0,   0,   255],
-      "purple": [128, 0,   128],
-      "gray":   [128, 128, 128],
-      "brown":  [165, 42,  42 ],
-      "black":  [0,   0,   0  ],
-      "white":  [255, 255, 255],
-   };
+      return [parseInt(hex.substring(1, 3), 16), parseInt(hex.substring(3, 5), 16), parseInt(hex.substring(5, 7), 16)];
+   }
 
    let ctx = e.target.getContext("2d");
-   let rgb = color[0] == "#" ? hexToRGB(color) : COLORSRGB[color];
+   let rgb = hexToRGB(color);
 
    socket.emit("floodfill", roomName, mousePosX(e), mousePosY(e), rgb, tollerance)
-   floodFill(ctx, mousePosX(e), mousePosY(e), rgb, tollerance, roomName)
+   floodFill(ctx, mousePosX(e), mousePosY(e), rgb, tollerance)
 
    socket.emit("savetohistory", roomName)
    saveToHistory(ctx);
@@ -290,11 +287,11 @@ document.getElementById("cut").addEventListener("click", function()
 
    CANVAS.style.cursor = "crosshair";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => {if (cutData.canCut) cutMode(e)};
 
-   opt.fun = (e) => {if (cutData.canCut) cutMode(e)};
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function cutMode(e)
 {
@@ -497,11 +494,11 @@ document.getElementById("line").addEventListener("click", function()
 
    CANVAS.style.cursor = "crosshair";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => lineMode(e, getSize(), getColor());
 
-   opt.fun = (e) => lineMode(e, opt.width, opt.color);
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function lineMode(e, width, color)
 {
@@ -542,11 +539,11 @@ document.getElementById("square").addEventListener("click", function()
 
    CANVAS.style.cursor = "crosshair";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => rectMode(e, getSize(), getColor());
 
-   opt.fun = (e) => rectMode(e, opt.width, opt.color);
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function rectMode(e, width, color)
 {
@@ -587,11 +584,11 @@ document.getElementById("circle").addEventListener("click", function()
 
    CANVAS.style.cursor = "crosshair";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => ellipseMode(e, getSize(), getColor());
 
-   opt.fun = (e) => ellipseMode(e, opt.width, opt.color);
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function ellipseMode(e, width, color)
 {
@@ -635,11 +632,11 @@ document.getElementById("text").addEventListener("click", function()
 
    CANVAS.style.cursor = "text";
 
-   CANVAS.removeEventListener("mousedown", opt.fun);
+   onModeChange?.()
+   let mode = (e) => textMode(e, getSize(), getColor());
 
-   opt.fun = (e) => textMode(e, opt.width, opt.color);
-
-   CANVAS.addEventListener("mousedown", opt.fun);
+   CANVAS.addEventListener("mousedown", mode);
+   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
 });
 function textMode(e, size, color)
 {
@@ -650,7 +647,7 @@ function textMode(e, size, color)
    INPUT.id = "drawtextinput";
 
 
-   const fontSize = (Math.log(size) / Math.log(1.05)) + 16;
+   const fontSize = size*3 + 20;
    const font = "monospace";
 
    const begX = mousePosX(e)
@@ -659,8 +656,10 @@ function textMode(e, size, color)
 
    INPUT.style.display = "inline";
    INPUT.style.fontSize = `${fontSize}px`
+   INPUT.style.color = color
 
-   INPUT.style.margin = `${begY-(INPUT.offsetHeight/2)}px 0px 0px ${begX}px`
+   INPUT.style.left = e.target.offsetLeft + e.target.clientLeft + begX
+   INPUT.style.top = e.target.offsetTop + e.target.clientTop + begY-(INPUT.offsetHeight/2)
 
 
    function txtInput(e)
@@ -700,20 +699,86 @@ function textMode(e, size, color)
    window.addEventListener("mouseup", () =>
    {
       INPUT.focus()
-      window.addEventListener("mousedown", () => INPUT.remove(), {once: true});
+      e.target.addEventListener("mousedown", () => INPUT.remove(), {once: true});
    }, {once: true})
 };
 
 document.getElementById("save").addEventListener("click", function()
 {
-   this.animate("shake", 0.25);
+   let option = this.value.slice(0, -1);
+   let id = this.value.slice(-1);
+   this.value = "0";
 
-   const link = document.createElement("a");
+   switch (option)
+   {
+      case "save":
+      {
+         socket.emit("save_events", roomName, id)
 
-   link.download = "canvas.png";
-   link.href = CANVAS.toDataURL("image/png");
+         setSaveAvailability(id, true)
+         break;
+      }
 
-   link.click();
+      case "load":
+      {
+         socket.emit("load_events", id)
+         break;
+      }
+
+      case "clear":
+      {
+         socket.emit("delete_events")
+
+         setAvailableSaves()
+         break;
+      }
+
+      case "download":
+      {
+         const link = document.createElement("a");
+
+         link.download = "canvas.png";
+         link.href = CANVAS.toDataURL("image/png");
+
+         link.click();
+
+         break;
+      }
+
+      case "upload":
+      {
+         function uploadImage(ctx, imgsrc)
+         {
+            let img = new Image();
+
+            img.onload = function()
+            {
+               ctx.putPixelData(ctx.getPixelData().fill(255));
+
+               let scale = Math.min(ctx.canvas.width/img.width, ctx.canvas.height/img.height)
+               ctx.drawImage(img, 0, 0, img.width * scale, img.height * scale);
+
+               saveToHistory(ctx);
+            };
+
+            img.src = URL.createObjectURL(imgsrc);
+         };
+
+         const UPLOADIMG = document.getElementById("uploadimg")
+
+         UPLOADIMG.click();
+
+         UPLOADIMG.addEventListener("change", function()
+         {
+            uploadImage(CONTEXT, this.files[0]);
+            this.value = "";
+         }, {once: true});
+
+         break;
+      }
+   }
+
+   //checkStorage(["canvas1data", "canvas2data", "canvas3data"], [LOAD1, LOAD2, LOAD3]);
 });
 document.getElementById("undo").addEventListener("click", function()
 {
@@ -738,34 +803,45 @@ document.getElementById("redo").addEventListener("click", function()
    else this.animate("bigShake", 0.2);
 });
 
-document.querySelectorAll(".colors").forEach(color => color.addEventListener("click", function()
+document.querySelectorAll(".colorbtn").forEach(color => color.addEventListener("click", function()
 {
    document.querySelector(".selectedbottom")?.classList.remove("selectedbottom")
    color.classList.add("selectedbottom")
 
    color.animate("bounce", 0.15);
-   opt.color = color.id;
 }));
 document.getElementById("sizebar").addEventListener("input", function()
 {
    const SIZECOUNT = document.getElementById("sizecount");
 
-   opt.width = this.value;
-
-   TOOLSBOT.style.height = "70px";
-
-   SIZECOUNT.style.display = "block";
+   SIZECOUNT.style.display = "inline";
    SIZECOUNT.innerText = this.value;
 
    SIZECOUNT.style.fontSize = (+this.value * 0.8) + 10 + "px";
-   SIZECOUNT.style.left = -62 + +this.value*16.2 + "px";
 
-   this.addEventListener("mouseup", () =>
-   {
-      SIZECOUNT.style.display = "none";
-      TOOLSBOT.style.height = "max-content";
-   }, {once: true});
+   SIZECOUNT.style.left = -59 + this.value*16 + this.offsetLeft + this.clientLeft
+   SIZECOUNT.style.top = -30 - this.value*0.8 + this.offsetTop + this.clientTop + "px";
+
+   this.addEventListener("mouseup", () => SIZECOUNT.style.display = "none", {once: true});
 });
+document.getElementById("tollerancebar").addEventListener("input", function()
+{
+   const TOLLERANCECOUNT = document.getElementById("tollerancecount");
+
+   TOLLERANCECOUNT.style.display = "inline";
+   TOLLERANCECOUNT.innerText = this.value;
+
+   TOLLERANCECOUNT.style.left = -43 + this.value*2.88 + this.offsetLeft + this.clientLeft
+   TOLLERANCECOUNT.style.top = 30 + this.offsetTop + this.clientTop + "px";
+
+   document.documentElement.style.setProperty("--tollerance-gradient", 100/this.max*this.value + "%");
+
+   this.addEventListener("mouseup", () => TOLLERANCECOUNT.style.display = "none", {once: true});
+});
+document.getElementById("colorpicker").addEventListener("input", function()
+{
+   this.classList.remove("transparent")
+}, {once: true});
 
 
 window.addEventListener("keydown", function(e)
@@ -840,9 +916,14 @@ function drawEllipse(ctx, center, radius, width=2, color="black")
 socket.on("drawtext_broadcast", (...args) => drawText(CONTEXT, ...args))
 function drawText(ctx, text, x, y, fontSize=20, color="black", font="arial")
 {
+   let tempFilter = ctx.filter;
+   ctx.filter = "none";
+
    ctx.font = `${fontSize}px ${font}`;
    ctx.fillStyle = color;
    ctx.fillText(text, x, y);
+
+   ctx.filter = tempFilter;
 }
 
 
@@ -976,6 +1057,19 @@ function redoHistory(ctx, safe=true)
 }
 
 
+socket.emit("getavailablesaves", setAvailableSaves)
+function setAvailableSaves(ids = [])
+{
+   const totalSaves = 3
+   for (let i=0; i<totalSaves; i++) setSaveAvailability(i, false)
+   for (i of ids) setSaveAvailability(i, true)
+}
+function setSaveAvailability(id, available)
+{
+   document.querySelector(`#save option[value="load${id}"]`).disabled = !available
+}
+
+
 function mousePosX(e, obj=CANVAS)
 {
    return e.pageX - obj.offsetLeft - obj.clientLeft
@@ -986,7 +1080,22 @@ function mousePosY(e, obj=CANVAS)
 }
 
 
-CANVAS.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerColor))
+function getColor()
+{
+   return document.querySelector(".selectedbottom").value
+}
+function getSize()
+{
+   return document.getElementById("sizebar").value;
+}
+function getTollerance()
+{
+   return document.getElementById("tollerancebar").value;
+}
+
+
+
+window.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerColor))
 socket.on("mousemove_broadcast", (mouseX, mouseY, playerColor) =>
 {
    const width = 16;
@@ -1002,6 +1111,6 @@ socket.on("mousemove_broadcast", (mouseX, mouseY, playerColor) =>
       PAINTSCR.append(pointer)
    }
 
-   pointer.style.left = mouseX - width/2 + CANVAS.offsetLeft - CANVAS.clientLeft + "px"
-   pointer.style.top = mouseY - width/2 + CANVAS.offsetTop - CANVAS.clientTop + "px"
+   pointer.style.left = mouseX - width/2 + CANVAS.offsetLeft + CANVAS.clientLeft + "px"
+   pointer.style.top = mouseY - width/2 + CANVAS.offsetTop + CANVAS.clientTop + "px"
 })
