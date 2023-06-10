@@ -1,4 +1,4 @@
-const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][1])
+const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][0])
 
 const HEADER = document.getElementById("header")
 const JOINSCR = document.getElementById("joinscreen")
