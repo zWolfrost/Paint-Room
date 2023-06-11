@@ -1072,11 +1072,13 @@ function setSaveAvailability(id, available)
 
 function mousePosX(e, obj=CANVAS)
 {
-   return e.pageX - obj.offsetLeft - obj.clientLeft
+   if (e.target === obj) return e.offsetX;
+   return e.pageX - obj.offsetLeft - obj.clientLeft;
 }
 function mousePosY(e, obj=CANVAS)
 {
-   return e.pageY - obj.offsetTop - obj.clientTop
+   if (e.target === obj) return e.offsetY;
+   return e.pageY - obj.offsetTop - obj.clientTop;
 }
 
 
