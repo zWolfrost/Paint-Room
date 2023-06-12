@@ -11,11 +11,18 @@ const PAINTSCR = document.getElementById("paintscreen")
 const CANVAS = document.getElementById("sheet");
 const CONTEXT = CANVAS.getContext("2d");
 
-const PLAYERCOLORS = ["red", "orange", "yellow", "green", "blue", "purple"]
+const PLAYERCOLORS = [
+   {hex: "#ff1a1a", filter: "invert(32%) sepia(88%) saturate(5787%) hue-rotate(348deg) brightness(102%) contrast(115%)"},
+   {hex: "#ff661a", filter: "invert(52%) sepia(85%) saturate(3095%) hue-rotate(348deg) brightness(100%) contrast(102%)"},
+   {hex: "#ffff00", filter: "invert(93%) sepia(75%) saturate(4694%) hue-rotate(357deg) brightness(103%) contrast(104%)"},
+   {hex: "#00cc00", filter: "invert(41%) sepia(99%) saturate(1149%) hue-rotate(87deg)  brightness(105%) contrast(114%)"},
+   {hex: "#3333ff", filter: "invert(26%) sepia(98%) saturate(7500%) hue-rotate(245deg) brightness(104%) contrast(106%)"},
+   {hex: "#bb33ff", filter: "invert(43%) sepia(72%) saturate(6750%) hue-rotate(265deg) brightness(101%) contrast(108%)"},
+]
 
 
 let roomName;
-let playerColor;
+let playerID;
 
 
 socket.on("connect", () =>
@@ -35,14 +42,12 @@ JOINBTN.addEventListener("click", () =>
 })
 
 
-
-function startPainting(playerID=0, width=window.screen.width, height=window.screen.height)
+function startPainting(ID=0, width=window.screen.width, height=window.screen.height)
 {
    HEADER.style.display = "none";
    JOINSCR.style.display = "none";
 
    PAINTSCR.style.display = "inline";
-   //document.querySelectorAll(".options").forEach(e => e.style.display = "block")
 
    CANVAS.width = width;
    CANVAS.height = height;
@@ -55,11 +60,11 @@ function startPainting(playerID=0, width=window.screen.width, height=window.scre
 
    CONTEXT.putPixelData(CONTEXT.getPixelData().fill(255));
 
-   socket.emit("savetohistory", roomName)
+   //socket.emit("savetohistory", roomName)
    saveToHistory(CONTEXT);
 
-   playerColor = PLAYERCOLORS[playerID % PLAYERCOLORS.length]
-   document.documentElement.style.setProperty("--player-color", playerColor);
+   playerID = ID
+   document.documentElement.style.setProperty("--player-color", PLAYERCOLORS[ID % PLAYERCOLORS.length].hex);
 }
 
 
@@ -99,6 +104,13 @@ function touchHandler(event)
    first.target.dispatchEvent(simulatedEvent);
    event.preventDefault();
 };
+
+
+window.addEventListener("resize", () =>
+{
+   document.getElementById("drawtextinput")?.remove()
+   document.querySelectorAll(".pointer")?.forEach(p => p.style.visibility = "hidden")
+})
 
 
 
@@ -699,15 +711,15 @@ function textMode(e, size, color)
    window.addEventListener("mouseup", () =>
    {
       INPUT.focus()
-      e.target.addEventListener("mousedown", () => INPUT.remove(), {once: true});
+      e.target.addEventListener("mousedown", () => INPUT?.remove(), {once: true});
    }, {once: true})
 };
 
-document.getElementById("save").addEventListener("click", function()
+document.getElementById("file").addEventListener("click", function()
 {
    let option = this.value.slice(0, -1);
    let id = this.value.slice(-1);
-   this.value = "0";
+   this.value = "";
 
    switch (option)
    {
@@ -721,7 +733,7 @@ document.getElementById("save").addEventListener("click", function()
 
       case "load":
       {
-         socket.emit("load_events", id)
+         socket.emit("load_events", roomName, id)
          break;
       }
 
@@ -747,38 +759,48 @@ document.getElementById("save").addEventListener("click", function()
 
       case "upload":
       {
-         function uploadImage(ctx, imgsrc)
-         {
-            let img = new Image();
-
-            img.onload = function()
-            {
-               ctx.putPixelData(ctx.getPixelData().fill(255));
-
-               let scale = Math.min(ctx.canvas.width/img.width, ctx.canvas.height/img.height)
-               ctx.drawImage(img, 0, 0, img.width * scale, img.height * scale);
-
-               saveToHistory(ctx);
-            };
-
-            img.src = URL.createObjectURL(imgsrc);
-         };
-
          const UPLOADIMG = document.getElementById("uploadimg")
 
          UPLOADIMG.click();
 
          UPLOADIMG.addEventListener("change", function()
          {
-            uploadImage(CONTEXT, this.files[0]);
+            function getDataURL(imgfile, maxSize, callback)
+            {
+               let img = new Image();
+
+               img.onload = function()
+               {
+                  let scale = Math.min(maxSize/img.width, maxSize/img.height)
+                  let width = img.width * scale
+                  let height = img.height * scale
+
+                  const ctx = document.createElement("canvas").getContext("2d")
+                  ctx.canvas.width = width;
+                  ctx.canvas.height = height;
+
+                  ctx.drawImage(img, 0, 0, width, height);
+
+                  callback(ctx.canvas.toDataURL("image/png"), width, height)
+               };
+
+               img.src = URL.createObjectURL(imgfile);
+            }
+
+            const maxSize = 1080
+
+            getDataURL(this.files[0], maxSize, (dataURL, width, height) =>
+            {
+               socket.emit("uploadimage", roomName, dataURL, width, height)
+               uploadImage(CONTEXT, dataURL, width, height);
+            })
+
             this.value = "";
          }, {once: true});
 
          break;
       }
    }
-
-   //checkStorage(["canvas1data", "canvas2data", "canvas3data"], [LOAD1, LOAD2, LOAD3]);
 });
 document.getElementById("undo").addEventListener("click", function()
 {
@@ -1029,6 +1051,25 @@ function movePixelData(ctx, begX, begY, endX, endY, putX, putY, delsource=true, 
 }
 
 
+socket.on("uploadimage_broadcast", (...args) => uploadImage(CONTEXT, ...args))
+function uploadImage(ctx, dataURL, width, height)
+{
+   let img = new Image();
+
+   img.onload = function()
+   {
+      let posX = ctx.canvas.width/2 - width/2
+      let posY = ctx.canvas.height/2 - height/2
+
+      ctx.drawImage(img, posX, posY, width, height);
+
+      saveToHistory(ctx);
+   };
+
+   img.src = dataURL;
+}
+
+
 socket.on("savetohistory_broadcast", () => saveToHistory(CONTEXT))
 function saveToHistory(ctx)
 {
@@ -1066,7 +1107,7 @@ function setAvailableSaves(ids = [])
 }
 function setSaveAvailability(id, available)
 {
-   document.querySelector(`#save option[value="load${id}"]`).disabled = !available
+   document.querySelector(`#file option[value="load${id}"]`).disabled = !available
 }
 
 
@@ -1096,23 +1137,28 @@ function getTollerance()
 }
 
 
-
-window.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerColor))
-socket.on("mousemove_broadcast", (mouseX, mouseY, playerColor) =>
+window.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerID))
+socket.on("mousemove_broadcast", (mouseX, mouseY, playerID) =>
 {
    const width = 16;
 
-   let pointer = document.querySelector(`.${playerColor}`)
+   let color = PLAYERCOLORS[playerID % PLAYERCOLORS.length]
+
+   let pointer = document.getElementById("player" + playerID)
 
    if (pointer == undefined)
    {
       pointer = document.createElement("img")
+      pointer.id = "player" + playerID
+      pointer.classList.add("pointer")
       pointer.src = "pointer.png"
       pointer.width = width
-      pointer.classList.add("pointer", playerColor)
+      pointer.style.filter = "drop-shadow(0px 0px 2px)" + color.filter
+
       PAINTSCR.append(pointer)
    }
 
+   pointer.style.visibility = "visible"
    pointer.style.left = mouseX - width/2 + CANVAS.offsetLeft + CANVAS.clientLeft + "px"
    pointer.style.top = mouseY - width/2 + CANVAS.offsetTop + CANVAS.clientTop + "px"
 })

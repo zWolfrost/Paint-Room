@@ -312,13 +312,8 @@ body
    z-index: 2;
 
    user-select: none;
+   pointer-events: none;
 }
-.pointer.red {filter: drop-shadow(0px 0px 2px) invert(43%) sepia(92%) saturate(3123%) hue-rotate(334deg) brightness(101%) contrast(101%);}
-.pointer.orange {filter: drop-shadow(0px 0px 2px) invert(70%) sepia(69%) saturate(569%) hue-rotate(337deg) brightness(105%) contrast(102%);}
-.pointer.yellow {filter: drop-shadow(0px 0px 2px) invert(76%) sepia(56%) saturate(997%) hue-rotate(11deg) brightness(100%) contrast(107%);}
-.pointer.green {filter: drop-shadow(0px 0px 2px) invert(35%) sepia(98%) saturate(1309%) hue-rotate(92deg) brightness(94%) contrast(105%);}
-.pointer.blue {filter: drop-shadow(0px 0px 2px) invert(19%) sepia(95%) saturate(6241%) hue-rotate(245deg) brightness(99%) contrast(104%);}
-.pointer.purple {filter: drop-shadow(0px 0px 2px) invert(25%) sepia(46%) saturate(6045%) hue-rotate(266deg) brightness(99%) contrast(105%);}
 
 
 
