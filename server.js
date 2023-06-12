@@ -1,4 +1,4 @@
-const io = require("socket.io")(3000, { cors: { origin: ["https://zwolfrost.github.io", "http://localhost:8000"], methods: ["GET", "POST"] } });
+const io = require("socket.io")(3000, { maxHttpBufferSize: 1e7, cors: { origin: ["https://zwolfrost.github.io", "http://localhost:8000"], methods: ["GET", "POST"] } });
 
 
 let events = {}
@@ -13,6 +13,10 @@ io.on("connection", socket =>
          if (io.sockets.adapter.rooms.get(roomName) === undefined)
          {
             delete events[roomName]
+         }
+         else
+         {
+            //send disconnection?
          }
       }
    })
@@ -46,15 +50,18 @@ io.on("connection", socket =>
 
       fs.writeFileSync("events.json", JSON.stringify(eventsjson));
    })
-   socket.on("load_events", (id) =>
+   socket.on("load_events", (roomName, id) =>
    {
       const ip = socket.handshake.address
       const fs = require("fs");
 
       let eventsjson = JSON.parse(fs.readFileSync("events.json"))
 
-      for (e of eventsjson[ip][id].slice(1)) socket.emit(e[0], ...e.slice(1))
-      //socket.emit("load_broadcast", eventsjson[ip][id])
+      for (e of eventsjson[ip][id].slice(1))
+      {
+         events[roomName].push(e)
+         io.to(roomName).emit(e[0], ...e.slice(1))
+      }
    })
    socket.on("delete_events", () =>
    {
@@ -81,28 +88,29 @@ io.on("connection", socket =>
    })
 
 
-   function broadcastEvent(onEvent, emitEvent=onEvent+"_broadcast", saveEvent=true)
+   function bcEvent(onEvent, emitEvent=onEvent+"_broadcast", saveToEvents=true)
    {
       socket.on(onEvent, function(roomName, ...args)
       {
-         if (saveEvent) events[roomName]?.push([emitEvent, ...args])
+         if (saveToEvents) events[roomName]?.push([emitEvent, ...args])
 
          socket.broadcast.to(roomName).emit(emitEvent, ...args)
       })
    }
 
-   broadcastEvent("drawline")
-   broadcastEvent("drawrect")
-   broadcastEvent("drawellipse")
-   broadcastEvent("drawtext")
+   bcEvent("drawline")
+   bcEvent("drawrect")
+   bcEvent("drawellipse")
+   bcEvent("drawtext")
 
-   broadcastEvent("floodfill")
-   broadcastEvent("clear")
-   broadcastEvent("movepixel")
+   bcEvent("floodfill")
+   bcEvent("clear")
+   bcEvent("movepixel")
+   bcEvent("uploadimage")
 
-   broadcastEvent("savetohistory")
-   broadcastEvent("undo")
-   broadcastEvent("redo")
+   bcEvent("savetohistory")
+   bcEvent("undo")
+   bcEvent("redo")
 
-   broadcastEvent("mousemove", "mousemove_broadcast", false)
+   bcEvent("mousemove", "mousemove_broadcast", false)
 })
