@@ -30,20 +30,32 @@ socket.on("connect", () =>
    INFOFIELD.innerText = `Connection with server established`;
    JOINFIELD.style.display = "inline";
 })
-socket.on("connect_error", err => INFOFIELD.innerText = `Error: ${err.message}`);
+socket.on("connect_error", err =>
+{
+   INFOFIELD.innerText = `Connection Error: ${err.message}\nYou can still paint offline`
+   JOINFIELD.style.display = "inline";
+   ROOMNAME.style.display = "none"
+   JOINBTN.innerText = "Play"
+});
 
 
 
 JOINBTN.addEventListener("click", () =>
 {
-   roomName = ROOMNAME.value || (socket.id + "_room");
+   if (socket.id === undefined) startPainting()
+   else
+   {
+      roomName = ROOMNAME.value || (socket.id + "_room");
 
-   socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
+      socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
+   }
 })
 
 
 function startPainting(localPlayerID=0, resolution=[window.screen.width, window.screen.height])
 {
+   playerID = localPlayerID
+
    HEADER.style.display = "none";
    JOINSCR.style.display = "none";
 
@@ -63,8 +75,8 @@ function startPainting(localPlayerID=0, resolution=[window.screen.width, window.
    //socket.emit("savetohistory", roomName)
    saveToHistory(CONTEXT);
 
-   playerID = localPlayerID
-   document.documentElement.style.setProperty("--player-color", PLAYERCOLORS[localPlayerID % PLAYERCOLORS.length].hex);
+   document.documentElement.style.setProperty("--player-color", PLAYERCOLORS[playerID % PLAYERCOLORS.length].hex);
+   setPlayersIDs([playerID])
 }
 
 
