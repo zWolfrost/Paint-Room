@@ -36,21 +36,21 @@ socket.on("connect_error", err => INFOFIELD.innerText = `Error: ${err.message}`)
 
 JOINBTN.addEventListener("click", () =>
 {
-   roomName = ROOMNAME.value || socket.id;
+   roomName = ROOMNAME.value || (socket.id + "_room");
 
    socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
 })
 
 
-function startPainting(ID=0, width=window.screen.width, height=window.screen.height)
+function startPainting(localPlayerID=0, resolution=[window.screen.width, window.screen.height])
 {
    HEADER.style.display = "none";
    JOINSCR.style.display = "none";
 
    PAINTSCR.style.display = "inline";
 
-   CANVAS.width = width;
-   CANVAS.height = height;
+   CANVAS.width = resolution[0];
+   CANVAS.height = resolution[1];
 
    CONTEXT.lineCap = "round";
    CONTEXT.lineJoin = "round";
@@ -63,8 +63,8 @@ function startPainting(ID=0, width=window.screen.width, height=window.screen.hei
    //socket.emit("savetohistory", roomName)
    saveToHistory(CONTEXT);
 
-   playerID = ID
-   document.documentElement.style.setProperty("--player-color", PLAYERCOLORS[ID % PLAYERCOLORS.length].hex);
+   playerID = localPlayerID
+   document.documentElement.style.setProperty("--player-color", PLAYERCOLORS[localPlayerID % PLAYERCOLORS.length].hex);
 }
 
 
@@ -253,14 +253,12 @@ document.getElementById("bucket").addEventListener("click", function()
 
    CANVAS.addEventListener("mousedown", mode);
 
-   document.getElementById("tollerance").style.display = "inline"
-   document.getElementById("right").style.display = "inline"
+   document.getElementById("tollerance").style.visibility = "visible"
 
    onModeChange = () =>
    {
       CANVAS.removeEventListener("mousedown", mode);
-      document.getElementById("tollerance").style.display = "none"
-      document.getElementById("right").style.display = "none"
+      document.getElementById("tollerance").style.visibility = "hidden"
    }
 });
 function fillMode(e, color, tollerance)
@@ -1111,6 +1109,26 @@ function setSaveAvailability(id, available)
 }
 
 
+socket.on("playerids", (...args) => setPlayersIDs(...args))
+function setPlayersIDs(arr)
+{
+   document.querySelectorAll(".pointer")?.forEach(p => p.style.visibility = "hidden")
+   document.querySelectorAll(".player")?.forEach(el => el.remove())
+
+   for (id of arr)
+   {
+      let player = document.createElement("img")
+      player.id = "player" + id
+      player.classList.add("player")
+      player.src = "player.png"
+      player.width = 16
+      player.style.filter = "drop-shadow(0px 0px 2px) " + PLAYERCOLORS[id % PLAYERCOLORS.length].filter
+
+      document.getElementById("players").append(player)
+   }
+}
+
+
 function mousePosX(e, obj=CANVAS)
 {
    if (e.target === obj) return e.offsetX;
@@ -1137,23 +1155,24 @@ function getTollerance()
 }
 
 
-window.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerID))
+
+CANVAS.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerID))
 socket.on("mousemove_broadcast", (mouseX, mouseY, playerID) =>
 {
    const width = 16;
 
    let color = PLAYERCOLORS[playerID % PLAYERCOLORS.length]
 
-   let pointer = document.getElementById("player" + playerID)
+   let pointer = document.getElementById("pointer" + playerID)
 
    if (pointer == undefined)
    {
       pointer = document.createElement("img")
-      pointer.id = "player" + playerID
+      pointer.id = "pointer" + playerID
       pointer.classList.add("pointer")
       pointer.src = "pointer.png"
       pointer.width = width
-      pointer.style.filter = "drop-shadow(0px 0px 2px)" + color.filter
+      pointer.style.filter = "drop-shadow(0px 0px 2px) " + color.filter
 
       PAINTSCR.append(pointer)
    }

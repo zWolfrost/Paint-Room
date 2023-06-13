@@ -1,6 +1,6 @@
 :root
 {
-   --tollerance-gradient: 0%;
+   --tollerance-gradient: 2%;
    --player-color: white;
 }
 
@@ -145,19 +145,19 @@ body
 
 #tollerance
 {
-   display: none;
+   visibility: hidden;
    flex: 1;
 
    padding: 8px;
-   max-width: 750px;
+   max-width: 300px;
 
    background:
       linear-gradient(
          90deg,
-         transparent calc(var(--tollerance-gradient)*0.961 + 17px - 2px),
-         white     calc(var(--tollerance-gradient)*0.961 + 17px - 2px),
-         white     calc(var(--tollerance-gradient)*0.961 + 17px + 2px),
-         transparent calc(var(--tollerance-gradient)*0.961 + 17px + 2px)
+         transparent calc(var(--tollerance-gradient)*0.902 + 17px - 2px),
+         white     calc(var(--tollerance-gradient)*0.902 + 17px - 2px),
+         white     calc(var(--tollerance-gradient)*0.902 + 17px + 2px),
+         transparent calc(var(--tollerance-gradient)*0.902 + 17px + 2px)
       ),
       linear-gradient(
          90deg,
@@ -169,19 +169,23 @@ body
    font-weight: bold;
    text-shadow: 1px 1px 2px black;
 }
-#right
+#players
 {
-   display: none;
-   visibility: hidden;
    flex: 1;
+   display: inline-flex;
 
    padding: 8px;
-   max-width: 750px;
+   max-width: 300px;
+
+   height: 20px;
+   text-align: left;
 }
+
 #colors
 {
    height: 44px;
 }
+
 
 
 .options
@@ -190,7 +194,7 @@ body
    text-align: center;
    pointer-events: auto;
 
-   background: linear-gradient(170deg, rgba(255, 255, 255, 0.2),  var(--player-color));
+   background: linear-gradient(170deg, rgba(255, 255, 255, 0.3), var(--player-color));
    border: 2px solid #262421;
    border-radius: 5px;
    box-shadow: 2px 2px 0px #262421;
@@ -235,6 +239,14 @@ body
 .options .selectedtop, .options .selectedbottom
 {
    outline: 2px dashed deepskyblue;
+}
+
+.player
+{
+   z-index: 2;
+   margin: 0px 5px 0px 5px;
+
+   user-select: none;
 }
 
 
