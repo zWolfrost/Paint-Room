@@ -863,7 +863,7 @@ document.getElementById("tollerancebar").addEventListener("input", function()
    TOLLERANCECOUNT.style.display = "inline";
    TOLLERANCECOUNT.innerText = this.value;
 
-   TOLLERANCECOUNT.style.left = -43 + this.value*2.88 + this.offsetLeft + this.clientLeft
+   TOLLERANCECOUNT.style.left = -43 + this.value*1.11 + this.offsetLeft + this.clientLeft
    TOLLERANCECOUNT.style.top = 30 + this.offsetTop + this.clientTop + "px";
 
    document.documentElement.style.setProperty("--tollerance-gradient", 100/this.max*this.value + "%");
