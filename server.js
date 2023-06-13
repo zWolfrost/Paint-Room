@@ -1,40 +1,91 @@
 const io = require("socket.io")(3000, { maxHttpBufferSize: 1e7, cors: { origin: ["https://zwolfrost.github.io", "http://localhost:8000"], methods: ["GET", "POST"] } });
 
 
-let events = {}
+let paintrooms = {}
 
 
-io.on("connection", socket =>
+function addSocketID(id, roomName)
 {
-   socket.on("disconnect", () =>
+   let indexOfSocket = paintrooms[roomName].players.indexOf(id)
+
+   if (indexOfSocket !== -1) return indexOfSocket
+   else
    {
-      for (roomName of Object.keys(events))
+      indexOfSocket = paintrooms[roomName].players.indexOf(null)
+
+      if (indexOfSocket !== -1)
       {
-         if (io.sockets.adapter.rooms.get(roomName) === undefined)
+         paintrooms[roomName].players[indexOfSocket] = id
+         return indexOfSocket
+      }
+      else
+      {
+         paintrooms[roomName].players.push(id)
+         return paintrooms[roomName].players.length - 1
+      }
+   }
+}
+function removeSocketID(id, roomName)
+{
+   let indexOfSocket = paintrooms[roomName].players.indexOf(id)
+   paintrooms[roomName].players[indexOfSocket] = null
+
+   return indexOfSocket
+}
+function getPlayerIDs(roomName)
+{
+   let players = paintrooms[roomName].players;
+
+   let playerIDs = [];
+   for (let i=0; i<players.length; i++)
+   {
+      if (players[i] !== null) playerIDs.push(i)
+   }
+
+   return playerIDs
+}
+
+
+
+io.on("connection", (socket) =>
+{
+   socket.on("disconnecting", () =>
+   {
+      let rooms = Array.from(socket.rooms)
+
+      if (rooms.length >= 2)
+      {
+         let roomName = rooms.pop();
+
+         if (getPlayerIDs(roomName).length == 1)
          {
-            delete events[roomName]
+            delete paintrooms[roomName]
          }
          else
          {
-            //send disconnection?
+            removeSocketID(socket.id, roomName)
+            io.to(roomName).emit("playerids", getPlayerIDs(roomName))
          }
       }
    })
-   socket.on("joinroom", (roomName, size, startPainting) =>
+   socket.on("joinroom", (roomName, resolution, startPainting) =>
    {
-      let playerID = io.sockets.adapter.rooms.get(roomName)?.size ?? 0
-
       socket.join(roomName)
 
-      if (roomName in events == false)
+      if (roomName in paintrooms == false)
       {
-         events[roomName] = [size]
-         startPainting(playerID, ...size)
+         paintrooms[roomName] = {
+            resolution: resolution,
+            players: [],
+            events: []
+         }
       }
-      else startPainting(playerID, ...events[roomName][0])
 
+      startPainting(addSocketID(socket.id, roomName), paintrooms[roomName].resolution)
 
-      for (e of events[roomName].slice(1)) socket.emit(e[0], ...e.slice(1))
+      io.to(roomName).emit("playerids", getPlayerIDs(roomName))
+
+      for (e of paintrooms[roomName].events) socket.emit(e[0], ...e.slice(1))
    })
 
 
@@ -46,7 +97,7 @@ io.on("connection", socket =>
       let eventsjson = JSON.parse(fs.readFileSync("events.json"))
 
       if (ip in eventsjson == false) eventsjson[ip] = []
-      eventsjson[ip][id] = events[roomName];
+      eventsjson[ip][id] = paintrooms[roomName].events;
 
       fs.writeFileSync("events.json", JSON.stringify(eventsjson));
    })
@@ -59,7 +110,7 @@ io.on("connection", socket =>
 
       for (e of eventsjson[ip][id].slice(1))
       {
-         events[roomName].push(e)
+         paintrooms[roomName].events.push(e)
          io.to(roomName).emit(e[0], ...e.slice(1))
       }
    })
@@ -92,7 +143,7 @@ io.on("connection", socket =>
    {
       socket.on(onEvent, function(roomName, ...args)
       {
-         if (saveToEvents) events[roomName]?.push([emitEvent, ...args])
+         if (saveToEvents) paintrooms[roomName].events.push([emitEvent, ...args])
 
          socket.broadcast.to(roomName).emit(emitEvent, ...args)
       })
