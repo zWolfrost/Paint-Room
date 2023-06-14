@@ -29,6 +29,7 @@ socket.on("connect", () =>
 {
    INFOFIELD.innerText = `Connection with server established`;
    JOINFIELD.style.display = "inline";
+   ROOMNAME.style.display = "inline"
 })
 socket.on("connect_error", err =>
 {
