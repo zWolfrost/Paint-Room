@@ -1054,8 +1054,6 @@ function clear(ctx)
 socket.on("movepixel_broadcast", (...args) => movePixelData(CONTEXT, ...args))
 function movePixelData(ctx, begX, begY, endX, endY, putX, putY, delsource=true, keepend=true)
 {
-   console.log(begX, begY, endX, endY, putX, putY, delsource, keepend)
-
    let pixelData = ctx.getPixelData(begX, begY, endX, endY)
    if (delsource) ctx.putPixelData([...pixelData].fill(255), begX, begY, endX, endY);
    if (keepend) ctx.putPixelData(pixelData, begX, begY, endX, endY, putX, putY);
