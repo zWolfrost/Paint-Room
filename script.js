@@ -1,3 +1,5 @@
+// DEFINING ELEMENTS & KEY SOCKET VARIABLES
+
 const socket = io(["https://paint-room-server.onrender.com", "http://localhost:3000"][0])
 
 const HEADER = document.getElementById("header")
@@ -20,10 +22,12 @@ const PLAYERCOLORS = [
    {hex: "#bb33ff", filter: "invert(43%) sepia(72%) saturate(6750%) hue-rotate(265deg) brightness(101%) contrast(108%)"},
 ]
 
-
 let roomName;
 let playerID;
 
+
+
+// UPDATING CLIENT BASED ON SERVER CONNECTON
 
 socket.on("connect", () =>
 {
@@ -37,9 +41,11 @@ socket.on("connect_error", err =>
    JOINFIELD.style.display = "inline";
    ROOMNAME.style.display = "none"
    JOINBTN.innerText = "Play"
-});
+})
 
 
+
+// START PAINTING ON BUTTON CLICK (defining canvas & event listeners)
 
 JOINBTN.addEventListener("click", () =>
 {
@@ -51,7 +57,6 @@ JOINBTN.addEventListener("click", () =>
       socket.emit("joinroom", roomName, [window.screen.width, window.screen.height], startPainting)
    }
 })
-
 
 function startPainting(localPlayerID=0, resolution=[window.screen.width, window.screen.height])
 {
@@ -78,9 +83,43 @@ function startPainting(localPlayerID=0, resolution=[window.screen.width, window.
 
    document.documentElement.style.setProperty("--player-color", PLAYERCOLORS[playerID % PLAYERCOLORS.length].hex);
    setPlayersIDs([playerID])
+
+
+   window.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerID))
+
+   window.addEventListener("resize", () =>
+   {
+      document.getElementById("drawtextinput")?.remove()
+      document.querySelectorAll(".pointer")?.forEach(p => p.style.visibility = "hidden")
+   })
+
+   window.addEventListener("keydown", function(e)
+   {
+      if (e.ctrlKey || e.metaKey)
+      {
+         switch (e.key)
+         {
+            case "z":
+            {
+               document.getElementById("undo").click()
+
+               break;
+            }
+
+            case "y":
+            {
+               document.getElementById("redo").click()
+
+               break;
+            }
+         }
+      }
+   })
 }
 
 
+
+// MOBILE COMPATIBILITY WITH CANVAS
 
 CANVAS.addEventListener("touchstart", touchHandler, true);
 CANVAS.addEventListener("touchmove", touchHandler, true);
@@ -116,40 +155,16 @@ function touchHandler(event)
 
    first.target.dispatchEvent(simulatedEvent);
    event.preventDefault();
-};
-
-
-window.addEventListener("resize", () =>
-{
-   document.getElementById("drawtextinput")?.remove()
-   document.querySelectorAll(".pointer")?.forEach(p => p.style.visibility = "hidden")
-})
+}
 
 
 
-HTMLElement.prototype.animate = function(name, seconds=1, mode="ease-in-out", repetitions=1, reset=true, callback=null)
-{
-   if (reset == true && this.style.animationName === name)
-   {
-      this.style.animation = "none";
-      this.offsetHeight;
-      this.style.animation = "none";
-   }
-
-   this.style.animation = `${name} ${seconds}s ${mode} ${repetitions}`;
-
-   this.addEventListener("animationend", function()
-   {
-      this.style.animation = "none";
-      if (callback != null) callback();
-   }, {once: true});
-};
-
+// DEFINING KEY CANVAS METHODS
 
 CanvasRenderingContext2D.prototype.getPixelData = function(begX=0, begY=0, endX=this.canvas.width, endY=this.canvas.height)
 {
    return this.getImageData(begX, begY, endX - begX, endY - begY).data;
-};
+}
 CanvasRenderingContext2D.prototype.putPixelData = function(pixelData, begX=0, begY=0, endX=this.canvas.width, endY=this.canvas.height, putX=begX, putY=begY)
 {
    let imgData = this.getImageData(begX, begY, endX - begX, endY - begY);
@@ -157,9 +172,11 @@ CanvasRenderingContext2D.prototype.putPixelData = function(pixelData, begX=0, be
    imgData.data.set(pixelData);
 
    this.putImageData(imgData, putX, putY);
-};
+}
 
 
+
+// DEFINING CANVAS MODES
 
 let history = [0];
 let cutData = {canCut: true, pixels: null, width: 0, height: 0, ctrlv: false};
@@ -168,17 +185,22 @@ let onModeChange;
 
 document.getElementById("pencil").addEventListener("click", function()
 {
-   this.animate("shake", 0.25);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "shake", 0.25);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "url(assets/pencil.cur), auto";
 
-   onModeChange?.()
+
    let mode = (e) => drawMode(e, getSize(), getColor());
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode)
+      this.classList.remove("selectedtop");
+   };
 });
 function drawMode(e, width, color)
 {
@@ -204,22 +226,27 @@ function drawMode(e, width, color)
       socket.emit("savetohistory", roomName)
       saveToHistory(ctx);
    }, {once: true});
-};
+}
 
 document.getElementById("eraser").addEventListener("click", function()
 {
-   this.animate("shake", 0.25);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "shake", 0.25);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "url(assets/eraser.cur), auto";
 
-   onModeChange?.()
+
    let mode = (e) => eraseMode(e, "white");
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
-});
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode)
+      this.classList.remove("selectedtop");
+   };
+})
 function eraseMode(e, color)
 {
    let ctx = e.target.getContext("2d");
@@ -251,17 +278,18 @@ function eraseMode(e, color)
       socket.emit("savetohistory", roomName)
       saveToHistory(ctx);
    }, {once: true});
-};
+}
 
 document.getElementById("bucket").addEventListener("click", function()
 {
-   this.animate("shake", 0.25);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "shake", 0.25);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "url(assets/bucket.cur), auto";
 
-   onModeChange?.()
+
    let mode = (e) => fillMode(e, getColor(), getTollerance());
 
    CANVAS.addEventListener("mousedown", mode);
@@ -271,9 +299,11 @@ document.getElementById("bucket").addEventListener("click", function()
    onModeChange = () =>
    {
       CANVAS.removeEventListener("mousedown", mode);
+      this.classList.remove("selectedtop");
+
       document.getElementById("tollerance").style.visibility = "hidden"
    }
-});
+})
 function fillMode(e, color, tollerance)
 {
    function hexToRGB(hex)
@@ -289,33 +319,38 @@ function fillMode(e, color, tollerance)
 
    socket.emit("savetohistory", roomName)
    saveToHistory(ctx);
-};
+}
 
 document.getElementById("clear").addEventListener("click", function()
 {
-   this.animate("shake", 0.25);
+   animate(this, "shake", 0.25);
 
    socket.emit("clear", roomName)
    clear(CONTEXT)
 
    socket.emit("savetohistory", roomName)
    saveToHistory(CONTEXT);
-});
+})
 
 document.getElementById("cut").addEventListener("click", function()
 {
-   this.animate("shake", 0.25);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "shake", 0.25);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "crosshair";
 
-   onModeChange?.()
+
    let mode = (e) => {if (cutData.canCut) cutMode(e)};
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
-});
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode)
+      this.classList.remove("selectedtop");
+   };
+})
 function cutMode(e)
 {
    let ctx = e.target.getContext("2d");
@@ -507,22 +542,27 @@ function cutMode(e)
    }
 
    window.addEventListener("mouseup", moveCutSession, {once: true});
-};
+}
 
 document.getElementById("line").addEventListener("click", function()
 {
-   this.animate("bounce", 0.15);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "bounce", 0.15);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "crosshair";
 
-   onModeChange?.()
+
    let mode = (e) => lineMode(e, getSize(), getColor());
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
-});
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode)
+      this.classList.remove("selectedtop");
+   };
+})
 function lineMode(e, width, color)
 {
    let ctx = e.target.getContext("2d");
@@ -552,22 +592,27 @@ function lineMode(e, width, color)
       socket.emit("savetohistory", roomName)
       saveToHistory(ctx);
    }, {once: true});
-};
+}
 
 document.getElementById("square").addEventListener("click", function()
 {
-   this.animate("bounce", 0.15);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "bounce", 0.15);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "crosshair";
 
-   onModeChange?.()
+
    let mode = (e) => rectMode(e, getSize(), getColor());
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
-});
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode)
+      this.classList.remove("selectedtop");
+   };
+})
 function rectMode(e, width, color)
 {
    let ctx = e.target.getContext("2d");
@@ -597,22 +642,27 @@ function rectMode(e, width, color)
       socket.emit("savetohistory", roomName)
       saveToHistory(ctx);
    }, {once: true});
-};
+}
 
 document.getElementById("circle").addEventListener("click", function()
 {
-   this.animate("bounce", 0.15);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "bounce", 0.15);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "crosshair";
 
-   onModeChange?.()
+
    let mode = (e) => ellipseMode(e, getSize(), getColor());
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
-});
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode)
+      this.classList.remove("selectedtop");
+   };
+})
 function ellipseMode(e, width, color)
 {
    let ctx = e.target.getContext("2d");
@@ -645,22 +695,27 @@ function ellipseMode(e, width, color)
       socket.emit("savetohistory", roomName)
       saveToHistory(ctx);
    }, {once: true});
-};
+}
 
 document.getElementById("text").addEventListener("click", function()
 {
-   this.animate("bounce", 0.15);
-   document.querySelector(".selectedtop")?.classList.remove("selectedtop")
+   onModeChange?.()
+
+   animate(this, "bounce", 0.15);
    this.classList.add("selectedtop")
 
    CANVAS.style.cursor = "text";
 
-   onModeChange?.()
+
    let mode = (e) => textMode(e, getSize(), getColor());
 
    CANVAS.addEventListener("mousedown", mode);
-   onModeChange = () => CANVAS.removeEventListener("mousedown", mode);
-});
+   onModeChange = () =>
+   {
+      CANVAS.removeEventListener("mousedown", mode);
+      this.classList.remove("selectedtop");
+   }
+})
 function textMode(e, size, color)
 {
    let ctx = e.target.getContext("2d");
@@ -724,7 +779,7 @@ function textMode(e, size, color)
       INPUT.focus()
       e.target.addEventListener("mousedown", () => INPUT?.remove(), {once: true});
    }, {once: true})
-};
+}
 
 document.getElementById("file").addEventListener("click", function()
 {
@@ -812,29 +867,29 @@ document.getElementById("file").addEventListener("click", function()
          break;
       }
    }
-});
+})
 document.getElementById("undo").addEventListener("click", function()
 {
    if (history[0] >= 2)
    {
-      this.animate("left", 0.15);
+      animate(this, "left", 0.15);
 
       socket.emit("undo", roomName, CONTEXT)
       undoHistory(CONTEXT, false);
    }
-   else this.animate("bigShake", 0.2);
-});
+   else animate(this, "bigShake", 0.2);
+})
 document.getElementById("redo").addEventListener("click", function()
 {
    if (history[0] < history.length - 1)
    {
-      this.animate("right", 0.15);
+      animate(this, "right", 0.15);
 
       socket.emit("redo", roomName, CONTEXT)
       redoHistory(CONTEXT, false);
    }
-   else this.animate("bigShake", 0.2);
-});
+   else animate(this, "bigShake", 0.2);
+})
 
 document.querySelectorAll(".colorbtn").forEach(color => color.addEventListener("click", function()
 {
@@ -842,7 +897,7 @@ document.querySelectorAll(".colorbtn").forEach(color => color.addEventListener("
    color.classList.add("selectedbottom")
 
    color.animate("bounce", 0.15);
-}));
+}))
 document.getElementById("sizebar").addEventListener("input", function()
 {
    const SIZECOUNT = document.getElementById("sizecount");
@@ -856,7 +911,7 @@ document.getElementById("sizebar").addEventListener("input", function()
    SIZECOUNT.style.top = -30 - this.value*0.8 + this.offsetTop + this.clientTop + "px";
 
    this.addEventListener("mouseup", () => SIZECOUNT.style.display = "none", {once: true});
-});
+})
 document.getElementById("tollerancebar").addEventListener("input", function()
 {
    const TOLLERANCECOUNT = document.getElementById("tollerancecount");
@@ -870,51 +925,27 @@ document.getElementById("tollerancebar").addEventListener("input", function()
    document.documentElement.style.setProperty("--tollerance-gradient", 100/this.max*this.value + "%");
 
    this.addEventListener("mouseup", () => TOLLERANCECOUNT.style.display = "none", {once: true});
-});
+})
 document.getElementById("colorpicker").addEventListener("input", function()
 {
    this.classList.remove("transparent")
-}, {once: true});
+}, {once: true})
 
 
-window.addEventListener("keydown", function(e)
-{
-   if (e.ctrlKey || e.metaKey)
-   {
-      switch (e.key)
-      {
-         case "z":
-         {
-            document.getElementById("undo").click()
 
-            break;
-         }
-
-         case "y":
-         {
-            document.getElementById("redo").click()
-
-            break;
-         }
-      }
-   }
-});
-
-
+// DEFINING BASIC DRAWING FUNCTIONS & ON EVENT BEHAVIOR
 
 socket.on("drawline_broadcast", (...args) => drawLine(CONTEXT, ...args))
 function drawLine(ctx, begpoints, endpoints, width=2, color="black")
 {
    ctx.beginPath();
 
-   ctx.strokeStyle = color;
    ctx.lineWidth = width;
+   ctx.strokeStyle = color;
 
    ctx.moveTo(begpoints[0], begpoints[1]);
    ctx.lineTo(endpoints[0], endpoints[1]);
    ctx.stroke();
-
-   ctx.closePath();
 }
 socket.on("drawrect_broadcast", (...args) => drawRect(CONTEXT, ...args))
 function drawRect(ctx, begpoints, endpoints, width=2, color="black", ...linedash)
@@ -927,8 +958,6 @@ function drawRect(ctx, begpoints, endpoints, width=2, color="black", ...linedash
 
    ctx.rect(begpoints[0], begpoints[1], endpoints[0] - begpoints[0], endpoints[1] - begpoints[1]);
    ctx.stroke();
-
-   ctx.closePath();
 
    ctx.setLineDash([]);
 }
@@ -943,8 +972,6 @@ function drawEllipse(ctx, center, radius, width=2, color="black")
 
    ctx.ellipse(center[0], center[1], radius[0], radius[1], Math.PI * 2, 0, Math.PI * 2);
    ctx.stroke();
-
-   ctx.closePath();
 }
 socket.on("drawtext_broadcast", (...args) => drawText(CONTEXT, ...args))
 function drawText(ctx, text, x, y, fontSize=20, color="black", font="arial")
@@ -1107,16 +1134,30 @@ function redoHistory(ctx, safe=true)
 }
 
 
-socket.emit("getavailablesaves", setAvailableSaves)
-function setAvailableSaves(ids = [])
+socket.on("mousemove_broadcast", (...args) => mouseMove(...args))
+function mouseMove(mouseX, mouseY, playerID)
 {
-   const totalSaves = 3
-   for (let i=0; i<totalSaves; i++) setSaveAvailability(i, false)
-   for (i of ids) setSaveAvailability(i, true)
-}
-function setSaveAvailability(id, available)
-{
-   document.querySelector(`#file option[value="load${id}"]`).disabled = !available
+   const width = 16;
+
+   let color = PLAYERCOLORS[playerID % PLAYERCOLORS.length]
+
+   let pointer = document.getElementById("pointer" + playerID)
+
+   if (pointer == undefined)
+   {
+      pointer = document.createElement("img")
+      pointer.id = "pointer" + playerID
+      pointer.classList.add("pointer")
+      pointer.src = "./assets/pointer.png"
+      pointer.width = width
+      pointer.style.filter = "drop-shadow(0px 0px 2px) " + color.filter
+
+      PAINTSCR.append(pointer)
+   }
+
+   pointer.style.visibility = "visible"
+   pointer.style.left = mouseX - width/2 + CANVAS.offsetLeft + CANVAS.clientLeft + "px"
+   pointer.style.top = mouseY - width/2 + CANVAS.offsetTop + CANVAS.clientTop + "px"
 }
 
 
@@ -1131,12 +1172,28 @@ function setPlayersIDs(arr)
       let player = document.createElement("img")
       player.id = "player" + id
       player.classList.add("player")
-      player.src = "player.png"
+      player.src = "./assets/player.png"
       player.width = 16
       player.style.filter = "drop-shadow(0px 0px 2px) " + PLAYERCOLORS[id % PLAYERCOLORS.length].filter
 
       document.getElementById("players").append(player)
    }
+}
+
+
+
+// DEFINING GENERAL USE FUNCTIONS
+
+socket.emit("getavailablesaves", setAvailableSaves)
+function setAvailableSaves(ids = [])
+{
+   const totalSaves = 3
+   for (let i=0; i<totalSaves; i++) setSaveAvailability(i, false)
+   for (i of ids) setSaveAvailability(i, true)
+}
+function setSaveAvailability(id, available)
+{
+   document.querySelector(`#file option[value="load${id}"]`).disabled = !available
 }
 
 
@@ -1166,29 +1223,40 @@ function getTollerance()
 }
 
 
-
-CANVAS.addEventListener("mousemove", e => socket.emit("mousemove", roomName, mousePosX(e), mousePosY(e), playerID))
-socket.on("mousemove_broadcast", (mouseX, mouseY, playerID) =>
+function animate(element, name, seconds=1, mode="ease-in-out", repetitions=1, reset=true, callback=null)
 {
-   const width = 16;
-
-   let color = PLAYERCOLORS[playerID % PLAYERCOLORS.length]
-
-   let pointer = document.getElementById("pointer" + playerID)
-
-   if (pointer == undefined)
+   if (reset == true && element.style.animationName === name)
    {
-      pointer = document.createElement("img")
-      pointer.id = "pointer" + playerID
-      pointer.classList.add("pointer")
-      pointer.src = "pointer.png"
-      pointer.width = width
-      pointer.style.filter = "drop-shadow(0px 0px 2px) " + color.filter
-
-      PAINTSCR.append(pointer)
+      element.style.animation = "none";
+      element.offsetHeight;
+      element.style.animation = "none";
    }
 
-   pointer.style.visibility = "visible"
-   pointer.style.left = mouseX - width/2 + CANVAS.offsetLeft + CANVAS.clientLeft + "px"
-   pointer.style.top = mouseY - width/2 + CANVAS.offsetTop + CANVAS.clientTop + "px"
-})
+   element.style.animation = `${name} ${seconds}s ${mode} ${repetitions}`;
+
+   element.addEventListener("animationend", function()
+   {
+      element.style.animation = "none";
+      if (callback != null) callback();
+   }, {once: true});
+}
+
+
+/*function intervalEventListener(object, event, callback, interval=10)
+{
+   let removeInterval;
+
+   function restartFun(e)
+   {
+      callback(e);
+
+      removeInterval = setTimeout(() => object.addEventListener(event, restartFun, {once: true}), interval)
+   }
+   object.addEventListener(event, restartFun, {once: true})
+
+   return () =>
+   {
+      clearTimeout(removeInterval)
+      object.removeEventListener(event, restartFun)
+   };
+}*/
