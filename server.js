@@ -46,7 +46,6 @@ function getPlayerIDs(roomName)
 }
 
 
-
 io.on("connection", (socket) =>
 {
    socket.on("disconnecting", () =>
@@ -85,7 +84,7 @@ io.on("connection", (socket) =>
 
       io.to(roomName).emit("playerids", getPlayerIDs(roomName))
 
-      for (e of paintrooms[roomName].events) socket.emit(e[0], ...e.slice(1))
+      for (e of paintrooms[roomName].events) socket.emit(...e)
    })
 
 
@@ -108,10 +107,10 @@ io.on("connection", (socket) =>
 
       let eventsjson = JSON.parse(fs.readFileSync("events.json"))
 
-      for (e of eventsjson[ip][id].slice(1))
+      for (e of eventsjson[ip][id])
       {
          paintrooms[roomName].events.push(e)
-         io.to(roomName).emit(e[0], ...e.slice(1))
+         io.to(roomName).emit(...e)
       }
    })
    socket.on("delete_events", () =>
