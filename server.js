@@ -1,4 +1,4 @@
-const io = require("socket.io")(3000, { maxHttpBufferSize: 1e7, cors: { origin: ["https://zwolfrost.github.io", "http://localhost:8000"], methods: ["GET", "POST"] } });
+const io = require("socket.io")(3000, { maxHttpBufferSize: 1e7, cors: { origin: ["https://paint.lucarusso.work", "https://zwolfrost.github.io", "http://localhost:8000"], methods: ["GET", "POST"] } });
 
 
 let paintrooms = {}
