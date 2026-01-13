@@ -1,0 +1,11 @@
+{
+  "nodemonConfig": {
+    "ignore": [
+      "*.json"
+    ]
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.6.2"
+  }
+}
