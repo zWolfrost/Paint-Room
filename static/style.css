@@ -65,6 +65,7 @@ body
    border-radius: 5px;
    box-shadow: 2px 2px 2px #262421;
    width: 500px;
+   height: 100%;
 }
 #joinbtn
 {
@@ -78,7 +79,7 @@ body
    border-radius: 5px;
    box-shadow: 2px 2px 2px #262421;
    width: 80px;
-   height: 40px;
+   height: 100%;
 
    cursor: pointer;
 }
@@ -89,6 +90,7 @@ body
 #joinfield
 {
    display: none;
+   height: 50px;
 }
 #infofield
 {

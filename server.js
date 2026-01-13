@@ -1,4 +1,23 @@
-const io = require("socket.io")(8002, { maxHttpBufferSize: 1e7, cors: { origin: ["https://paint.wolframite.cc", "http://localhost:8000"], methods: ["GET", "POST"] } });
+const express = require("express");
+const http = require("http");
+const path = require("path");
+
+const app = express();
+const server = http.createServer(app);
+app.use(express.static(path.join(__dirname, "static")));
+
+const { Server } = require("socket.io");
+
+const io = new Server(server, {
+   maxHttpBufferSize: 1e7,
+   cors: {
+      origin: ["https://paint.wolframite.cc", "http://localhost:8000"],
+      methods: ["GET", "POST"]
+   }
+});
+
+const PORT = process.argv[2] || 8000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 
 
 let paintrooms = {}

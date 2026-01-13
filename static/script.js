@@ -1,6 +1,6 @@
 // DEFINING ELEMENTS & KEY SOCKET VARIABLES
 
-const socket = io(["https://paint-server.wolframite.cc", "http://localhost:8002"][0])
+const socket = io()
 
 const HEADER = document.getElementById("header")
 const JOINSCR = document.getElementById("joinscreen")
@@ -32,13 +32,13 @@ let playerID;
 socket.on("connect", () =>
 {
    INFOFIELD.innerText = `Connection with server established`;
-   JOINFIELD.style.display = "inline";
+   JOINFIELD.style.display = "block";
    ROOMNAME.style.display = "inline"
 })
 socket.on("connect_error", err =>
 {
    INFOFIELD.innerText = `Connection Error: ${err.message}\nYou can still paint offline`
-   JOINFIELD.style.display = "inline";
+   JOINFIELD.style.display = "block";
    ROOMNAME.style.display = "none"
    JOINBTN.innerText = "Play"
 })
