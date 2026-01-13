@@ -1,0 +1,107 @@
+<html>
+   <head>
+      <meta name="viewport" content="width=1024"/>
+      <title>Paint Room</title>
+      <link rel="icon" type="image/x-icon" href="assets/paint.ico">
+
+      <link rel="stylesheet" href="style.css">
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.2/socket.io.min.js"></script>
+      <script defer src="script.js"></script>
+   </head>
+   <body>
+      <div id="header">
+         Paint Room
+      </div>
+
+      <div id="joinscreen">
+         <div id="joinfield">
+            <input type="text" id="roomname" placeholder="Enter a room name" value="">
+            <button id="joinbtn">Join</button>
+         </div>
+         <div id="infofield">
+            Waiting for connection...
+         </div>
+      </div>
+
+      <div id="paintscreen">
+         <canvas id="sheet"></canvas>
+
+         <div id="top" class="flex">
+
+            <div id="tollerance" class="options">
+               <div>Fill Color Tollerance</div>
+               <input type="range" id="tollerancebar" class="range" min="0" max="255" value="5"/>
+               <label id="tollerancecount"></label>
+            </div>
+
+            <div id="tools" class="options">
+               <div>
+                  <button id="pencil">✏️</button>
+                  <button id="eraser">🧼</button>
+                  <button id="bucket">🧺</button>
+                  <button id="clear">🧹</button>
+                  <button id="cut">✂️</button>
+                  <select id="file">
+                     <option value="" hidden selected>💾</option>
+
+                     <option disabled>Save</option>
+                     <option value="save0">Slot 1</option>
+                     <option value="save1">Slot 2</option>
+                     <option value="save2">Slot 3</option>
+
+                     <option disabled></option>
+                     <option disabled>Load</option>
+                     <option value="load0">Slot 1</option>
+                     <option value="load1">Slot 2</option>
+                     <option value="load2">Slot 3</option>
+
+                     <option disabled></option>
+                     <option disabled>Other</option>
+                     <option value="clear_">Clear Slots</option>
+                     <option value="download_">Download</option>
+                     <option value="upload_">Upload</option>
+                  </select>
+               </div>
+
+               <div>
+                  <button id="line">➖</button>
+                  <button id="square">⬛</button>
+                  <button id="circle">⚫</button>
+                  <button id="text">💬</button>
+
+                  &emsp;
+
+                  <button id="undo">↩</button>
+                  <button id="redo">↪</button>
+               </div>
+            </div>
+
+            <div id="players" class="options"></div>
+
+         </div>
+
+
+         <div id="bottom" class="flex">
+
+            <div id="colors" class="options">
+               <input type="color" id="colorpicker" class="colorbtn transparent"
+               ><button id="red" value="#ff1a1a" class="colorbtn">🔴</button
+               ><button id="orange" value="#ff661a" class="colorbtn">🟠</button
+               ><button id="yellow" value="#ffff00" class="colorbtn">🟡</button
+               ><button id="green" value="#00cc00" class="colorbtn">🟢</button
+               ><button id="blue" value="#3333ff" class="colorbtn">🔵</button
+               ><button id="purple" value="#bb33ff" class="colorbtn">🟣</button
+               ><button id="black" value="#000000" class="colorbtn selectedbottom">⚫</button
+               ><button id="white" value="#ffffff" class="colorbtn">⚪</button>
+
+               <input type="range" id="sizebar" class="range" min="1" max="25" value="4"/>
+               <label id="sizecount"></label>
+            </div>
+
+         </div>
+
+         <input type="file" id="uploadimg" accept="image/*" style="display:none"/>
+      </div>
+   </body>
+</html>
