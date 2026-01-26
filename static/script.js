@@ -7,6 +7,7 @@ const JOINSCR = document.getElementById("joinscreen")
 const JOINFIELD = document.getElementById("joinfield")
 const INFOFIELD = document.getElementById("infofield")
 const ROOMNAME = document.getElementById("roomname")
+const ROOMINFO = document.getElementById("roominfo")
 const JOINBTN = document.getElementById("joinbtn")
 
 const PAINTSCR = document.getElementById("paintscreen")
@@ -69,6 +70,8 @@ function startPainting(localPlayerID=0, resolution=[window.screen.width, window.
 
    CANVAS.width = resolution[0];
    CANVAS.height = resolution[1];
+
+   ROOMINFO.innerText = `@${roomName}`
 
    CONTEXT.lineCap = "round";
    CONTEXT.lineJoin = "round";

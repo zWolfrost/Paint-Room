@@ -188,6 +188,15 @@ body
    height: 44px;
 }
 
+#roominfo
+{
+   position: absolute;
+   right: 5px;
+   top: 0px;
+   font-family: monospace;
+   font-size: 14px;
+}
+
 
 
 .options
